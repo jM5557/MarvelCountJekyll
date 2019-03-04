@@ -50,7 +50,7 @@
 					</a>
 				</li>
 				<li>
-					<a href="https://instagram.com/MarvelCount">
+					<a href="https://instagram.com/MarvelCountInsta">
 						<span class = "instagram-icon icon"></span>
 						
 						Our Instagram

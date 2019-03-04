@@ -18,6 +18,6 @@ permalink: /contact
     If you'd like to say hi, ask us a question, or report a bug or issue experienced in using our site, please send us an email to:
   </p>
 
-  <p class = "mail-to">marvelcount@gmail.com</p>
+  <p class = "mail-to">contactmarvelcount@gmail.com</p>
 
 </div>

@@ -19,8 +19,8 @@ description: >- # this means to ignore newlines until "baseurl:"
   Countdown timer and timeline for the latest Marvel Cinematic Universe films
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://marvelcount.com" # the base hostname & protocol for your site, e.g. http://example.com
-twitter_username: jekyllrb
-github_username:  jekyll
+twitter_username: marvelcount
+github_username:  jm5557
 
 # Build settings
 markdown: kramdown
