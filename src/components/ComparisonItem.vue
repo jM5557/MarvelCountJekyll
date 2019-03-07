@@ -19,8 +19,8 @@
 			</p>
 
 			<ul>
-				<li v-for = "movie in item.movies" class = "movies main-stats">
-					{{ movie }}
+				<li v-for = "movie in moviesWithCharacter" class = "movies main-stats">
+					{{ movie.name }}
 				</li>
 			</ul>
 
@@ -30,6 +30,7 @@
 
 <script>
 	import { getImageWithLocalPath } from './../lib/helpers.js';
+	import MovieList from './../data/movies.js';
 
 	export default {
 		name: 'comparison-item',
@@ -38,6 +39,30 @@
 
 		data () {
 			return {
+				movieList: []
+			}
+		},
+
+		computed: {
+			moviesWithCharacter: function () {
+				
+				let temp = [];
+
+				for (var i = 0; i < MovieList.movieList.length; i++) {
+
+					for (var j = 0; j < MovieList.movieList[i].characterID.length; j++) {
+
+						if (MovieList.movieList[i].characterID[j] == this.item.id) {
+
+							temp.push(MovieList.movieList[i]);
+
+						}
+
+					}
+
+				}
+
+				return temp;
 
 			}
 		},
