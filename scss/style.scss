@@ -136,11 +136,10 @@ tr {
 	}
 }
 
-#timer-wrapper {
-	background: url('/dist/Assets/bg-latest.png') no-repeat center center;
-	background-size: cover;
-	padding-top: 200px;
-	padding: 12vw 20px 25vh 20px;
+.large-timer {
+
+	background-color: #111;
+	padding: 8vw 20px 25vh 20px;
 	display: block;
 	height: 100vh;
 	min-height: 375px;
@@ -150,10 +149,7 @@ tr {
 	margin-bottom: 105px;
 	box-sizing: border-box;
 
-	position: relative;
-	z-index: 3;
-
-	#timer-inner-wrapper {
+	.inner-wrapper {
 		max-width: 480px;
 		width: 90%;
 		text-align: center;
@@ -189,7 +185,7 @@ tr {
 		}
 	}
 
-	#timer-inner-wrapper {
+	.inner-wrapper {
 		div:not(.timer-content) {
 			display: inline-block;
 			margin: 7.5px 15px;
@@ -243,7 +239,155 @@ tr {
 			}
 		}
 
-		&.timer-warning {
+		.timer-warning {
+			div {
+
+				.num {
+					
+
+					@include warningAnimation ();
+				}
+			}
+		}
+
+		.get-tickets-link {
+			background-color: purple;
+			font-family: $fontHeavy;
+			font-size: 1.75rem;
+			padding: 20px;
+			display: block;
+			text-align: center;
+			box-shadow: 0px 5px 25px 5px #111;
+			border-radius: 2px;
+		}
+	}
+
+	@media all and (min-device-width: 375px) 
+	and (max-device-width: 812px) 
+	and (-webkit-device-pixel-ratio: 3)
+	and (orientation: landscape) {
+		padding-top: 10vw;
+		padding-bottom: 20vh;
+		min-height: 200px;
+
+		img {
+			max-width: 380px;
+		}
+	}
+
+	@media all and (max-width: $bp_mobile)
+	and (orientation: landscape) {
+		padding-top: 6vw;
+		padding-bottom: 15vh;
+		min-height: 200px;
+
+		img {
+			max-width: 300px;
+		}
+	}
+
+	@media all and (max-width: $bp_mobile) {
+		padding-top: 60px;
+	}
+
+	@media all and (max-width: $bp_mobile_sm)
+	and (orientation: portrait) {
+		padding-top: 25vw;
+		padding-bottom: 25vw;
+	}
+
+	@media all and (max-width: $bp_mobile_sm)
+	and (orientation: landscape) {
+		padding-top: 60px;
+	}
+}
+
+.timer-wrapper, .large-timer .small-timer {
+
+	position: relative;
+	z-index: 3;
+
+	.inner-wrapper {
+		text-align: center;
+	}
+
+	&:before {
+		content: "";
+		background-color: $bodyColor;
+		opacity: 0.80;
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: -1;
+	}
+
+	img {
+		max-width: 100%;
+		display: block;
+		margin: auto;
+
+		@media all and (max-width: $bp_mobile) {
+			max-width: 80%;
+		}
+	}
+
+	.inner-wrapper {
+		div:not(.timer-content) {
+			display: inline-block;
+			margin: 5px 8px;
+			text-align: left;
+
+			.lbl {
+				font-size: 0.65rem;
+				font-weight: bolder;
+				font-family: $fontNormal;
+				letter-spacing: 4px;
+				padding-left: 3px;
+				margin-bottom: 5px;
+			}
+
+			.num {
+				font-size: 1.45rem;
+				font-family: $fontHeavy;
+				font-weight: bolder;
+			}
+
+			@media all and (min-device-width: 375px) 
+			and (max-device-width: 812px) 
+			and (-webkit-device-pixel-ratio: 3)
+			and (orientation: landscape) {
+				.num {
+					font-size: 1.15rem;
+				}
+			}
+
+			@media all and (max-width: $bp_mobile) {
+				margin: 5px 5.5px;
+
+				.num {
+					font-size: 1.35rem;
+				}
+			}
+
+			@media all and (max-width: 500px) {
+				display: inline-block;
+				width: 30%;
+				text-align: center;
+
+				.lbl {
+					font-size: 0.85rem;
+				}
+
+				.num {
+					font-size: 1.35rem;
+					padding: 3.5px;
+				}
+			}
+		}
+
+		.timer-warning {
 			div {
 
 				.num {
@@ -302,49 +446,51 @@ tr {
 		bottom: 90px;
 	}
 
-	@media all and (min-device-width: 375px) 
-	and (max-device-width: 812px) 
-	and (-webkit-device-pixel-ratio: 3)
-	and (orientation: landscape) {
-		padding-top: 15vw;
-		padding-bottom: 20vh;
-		min-height: 200px;
+	@media all and (max-width: 640px) {
+		.twitter-share-button,
+		.reddit-icon {
+			
+			bottom: 30px;
+		}
 
-		img {
-			max-width: 380px;
+		.reddit-icon {
+			bottom: 65px;
 		}
 	}
+}
 
-	@media all and ($bp_mobile)
-	and (orientation: landscape) {
-		padding-top: 10vw;
-		padding-bottom: 15vh;
-		min-height: 200px;
+.small-timer {
+	text-align: center;
+	padding: 20px;
 
-		img {
-			max-width: 300px;
-		}
+	.inner-wrapper {
+		margin: auto auto;
 	}
 
-	@media all and (max-width: $bp_mobile) {
-		padding-top: 120px;
+	img {
+		max-width: 65%;
 	}
 
-	@media all and (max-width: $bp_mobile_sm)
-	and (orientation: portrait) {
-		padding-top: 40vw;
-		padding-bottom: 25vw;
+}
+
+.large-timer .small-timer {
+	max-width: 480px;
+	margin-left: 15vw;
+
+	@media all and (max-width: 720px) {
+		margin: auto;
+		max-width: unset;
+		width: 85%;
 	}
 
-	@media all and (max-width: $bp_mobile_sm)
-	and (orientation: landscape) {
-		padding-top: 100px;
+	img {
+		max-width: 240px;
 	}
 }
 
 .scroll-notify {
 	position: absolute;
-	bottom: 6vh;
+	bottom: 3vh;
 	left: 0px;
 	right: 0px;
 	display: block;
@@ -352,7 +498,8 @@ tr {
 	margin: auto;
 	text-align: center;
 	cursor: pointer;
-
+	z-index: 4;
+	
 	@include bounceAnimation ();
 
 	@media all and (min-device-width: 375px) 

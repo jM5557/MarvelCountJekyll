@@ -93,7 +93,7 @@ module.exports = {
   performance: {
     hints: false
   },
-  devtool: '#eval-source-map'
+  mode: 'development'
 }
 
 if (process.env.NODE_ENV === 'production') {

@@ -4,7 +4,7 @@ export default {
 		{
 			id: 1,
 			name: 'Iron Man',
-			releaseDate: 'May 2nd, 2008',
+			releaseDate: 'May 2, 2008',
 			trailerUrl: 'https://www.youtube.com/watch?v=tbMG2yTDXSY',
 			poster: 'iron-man-1.jpg',
 
@@ -13,7 +13,7 @@ export default {
 		{
 			id: 2,
 			name: 'The Incredible Hulk',
-			releaseDate: 'June 13th, 2008',
+			releaseDate: 'June 13, 2008',
 			trailerUrl: 'https://youtu.be/xbqNb2PFKKA',
 			poster: 'hulk-1.jpg',
 
@@ -22,7 +22,7 @@ export default {
 		{
 			id: 3,
 			name: 'Iron Man 2',
-			releaseDate: 'May 7th, 2010',
+			releaseDate: 'May 7, 2010',
 			trailerUrl: 'https://youtu.be/DIfgxIv5xmk',
 			poster: 'iron-man-2.jpg',
 
@@ -31,7 +31,7 @@ export default {
 		{
 			id: 4,
 			name: 'Thor',
-			releaseDate: 'May 6th, 2011',
+			releaseDate: 'May 6, 2011',
 			trailerUrl: 'https://youtu.be/JOddp-nlNvQ',
 			poster: 'thor-1.jpg',
 
@@ -40,7 +40,7 @@ export default {
 		{
 			id: 5,
 			name: 'Captain America: The First Avenger',
-			releaseDate: 'July 19th, 2011',
+			releaseDate: 'July 19, 2011',
 			trailerUrl: 'https://www.youtube.com/watch?v=JerVrbLldXw',
 			poster: 'captain-america-1.jpg',
 
@@ -50,7 +50,7 @@ export default {
 		{
 			id: 6,
 			name: 'Marvel\'s The Avengers',
-			releaseDate: 'May 4th, 2012',
+			releaseDate: 'May 4, 2012',
 			trailerUrl: 'https://www.youtube.com/watch?v=eOrNdBpGMv8',
 			poster: 'avengers-1.jpg',
 			characterID: [ 1, 2, 3, 4, 5, 6, 7 ] 
@@ -58,7 +58,7 @@ export default {
 		{
 			id: 7,
 			name: 'Iron Man 3',
-			releaseDate: 'May 3rd, 2013',
+			releaseDate: 'May 3, 2013',
 			trailerUrl: 'https://youtu.be/YLorLVa95Xo',
 			poster: 'iron-man-3.jpg',
 			characterID: [1] 
@@ -66,7 +66,7 @@ export default {
 		{
 			id: 8,
 			name: 'Thor: The Dark World',
-			releaseDate: 'November 8th, 2013',
+			releaseDate: 'November 8, 2013',
 			trailerUrl: 'https://www.youtube.com/watch?v=npvJ9FTgZbM',
 			poster: 'thor-2.jpg',
 
@@ -75,7 +75,7 @@ export default {
 		{
 			id: 9,
 			name: 'Captain America: The Winter Soldier',
-			releaseDate: 'April 4th, 2014',
+			releaseDate: 'April 4, 2014',
 			trailerUrl: 'https://www.youtube.com/watch?v=tbayiPxkUMM',
 			poster: 'captain-america-2.jpg',
 
@@ -84,7 +84,7 @@ export default {
 		{
 			id: 10,
 			name: 'Guardians of the Galaxy',
-			releaseDate: 'August 1st, 2014',
+			releaseDate: 'August 1, 2014',
 			trailerUrl: 'https://youtu.be/d96cjJhvlMA',
 			poster: 'guardians-1.jpg',
 
@@ -93,7 +93,7 @@ export default {
 		{
 			id: 11,
 			name: 'Avengers: Age of Ultron',
-			releaseDate: 'May 1st, 2015',
+			releaseDate: 'May 1, 2015',
 			trailerUrl: 'https://youtu.be/tmeOjFno6Do',
 			poster: 'avengers-2.jpg',
 
@@ -102,7 +102,7 @@ export default {
 		{
 			id: 12,
 			name: 'Ant-Man',
-			releaseDate: 'June 29th, 2015',
+			releaseDate: 'June 29, 2015',
 			trailerUrl: 'https://youtu.be/pWdKf3MneyI',
 			poster: 'antman-1.jpg',
 
@@ -111,7 +111,7 @@ export default {
 		{
 			id: 13,
 			name: 'Captain America: Civil War',
-			releaseDate: 'May 6th, 2016',
+			releaseDate: 'May 6, 2016',
 			trailerUrl: 'https://youtu.be/dKrVegVI0Us',
 			poster: 'captain-america-3.jpg',
 			characterID: [ 1, 3, 5, 6, 9, 10, 11, 12 ] 
@@ -119,7 +119,7 @@ export default {
 		{
 			id: 14,
 			name: 'Doctor Strange',
-			releaseDate: 'October 20th, 2016',
+			releaseDate: 'October 20, 2016',
 			trailerUrl: 'https://youtu.be/HSzx-zryEgM',
 			poster: 'doctor-strange-1.jpg',
 
@@ -128,7 +128,7 @@ export default {
 		{
 			id: 15,
 			name: 'Guardians of the Galaxy Vol. 2',
-			releaseDate: 'May 5th, 2017',
+			releaseDate: 'May 5, 2017',
 			trailerUrl: 'https://youtu.be/dW1BIid8Osg',
 			poster: 'guardians-2.jpg',
 
@@ -137,7 +137,7 @@ export default {
 		{
 			id: 16,
 			name: 'Spider-Man: Homecoming',
-			releaseDate: 'July 7th, 2017',
+			releaseDate: 'July 7, 2017',
 			trailerUrl: 'https://youtu.be/8wNgphPi5VM',
 			poster: 'spiderman-1.jpg',
 			characterID: [ 1, 9 ] 
@@ -145,7 +145,7 @@ export default {
 		{
 			id: 17,
 			name: 'Thor: Ragnarok',
-			releaseDate: 'November 3rd, 2017',
+			releaseDate: 'November 3, 2017',
 			trailerUrl: 'https://youtu.be/ue80QwXMRHg',
 			poster: 'thor-3.jpg',
 
@@ -154,7 +154,7 @@ export default {
 		{
 			id: 18,
 			name: 'Black Panther',
-			releaseDate: 'February 16th, 2017',
+			releaseDate: 'February 16, 2017',
 			trailerUrl: 'https://youtu.be/xjDjIWPwcPU',
 			poster: 'black-panther-1.jpg',
 
@@ -163,7 +163,7 @@ export default {
 		{
 			id: 19,
 			name: 'Avengers: Infinity War',
-			releaseDate: 'April 27th, 2018',
+			releaseDate: 'April 27, 2018',
 			trailerUrl: 'https://youtu.be/mBeOUjf-NLA',
 			poster: 'avengers-3.jpg',
 			characterID: [ 1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 15  ] 
@@ -171,7 +171,7 @@ export default {
 		{
 			id: 20,
 			name: 'Ant-Man and the Wasp',
-			releaseDate: 'July 6th, 2018',
+			releaseDate: 'July 6, 2018',
 			trailerUrl: 'https://youtu.be/8_rTIAOohas',
 			poster: 'antman-2.jpg',
 
@@ -180,20 +180,40 @@ export default {
 		{
 			id: 21,
 			name: 'Captain Marvel',
-			releaseDate: 'March 8th, 2019',
+			releaseDate: 'March 8, 2019',
 			trailerUrl: 'https://youtu.be/0LHxvxdRnYc',
+
 			poster: 'cpt-marvel.jpg',
+			logo: 'cpt-marvel-logo.png',
+			wallpaper: 'cpt-marvel-wp.jpg',
 
 			characterID: [14] 
 		},
 		{
 			id: 22,
 			name: 'Avengers: Endgame',
-			releaseDate: 'April 27th, 2019',
-			trailerUrl: 'https://youtu.be/hA6hldpSTF8',
-			poster: 'avengers-4.jpg',
+			releaseDate: 'April 27, 2019',
+			trailerUrl: 'https://www.youtube.com/watch?v=TcMBFSGVi1c',
+			
+			poster: 'avengers-4-wp.jpg',
+			logo: 'avengers-4-logo.png',
+			wallpaper: 'avengers-4-wp.jpg',
 
 			characterID: [ 1, 2, 3, 4, 5, 6, 10, 15 ]
 		}
-	]
+	],
+
+	featuredFilm: {
+
+		id: 21,
+		tickets_url: "https://www.fandango.com/captain-marvel-2019-188283/movie-times"
+
+	},
+
+	otherFeatured: {
+
+		id: 22,
+		tickets_url: "https://www.fandango.com/avengers-endgame-215871/movie-overview"
+
+	}
 }

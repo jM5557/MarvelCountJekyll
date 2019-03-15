@@ -1,4 +1,5 @@
 <template>
+	
 	<div id = "comparison-wrapper">
 
 		<div id = "comparison-menu-toggle" v-on:click = "displayMenu" :class = "menuIsVisible ? 'on hamburger-menu has_text' : 'hamburger-menu has_text'">Choose A Hero</div>
@@ -15,7 +16,9 @@
 		<div id = "comparison-inner-wrapper">
 			<ComparisonItem :item = "selectedCharacter" ></ComparisonItem>
 		</div>
+
 	</div>
+
 </template>
 
 <script>

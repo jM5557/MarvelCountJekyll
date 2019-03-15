@@ -1,10 +1,35 @@
 <template>
   <div id="app">
-   	<CountdownTimer :endDate = "countDownFilm.releaseDate" 
-      :film = "countDownFilm" 
-      v-on:set-modal-meta = "setModalMeta"
-      :ticketsUrl = "'https://www.fandango.com/captain-marvel-2019-188283/movie-times'"
-    ></CountdownTimer>
+   	<CountdownTimer 
+
+        v-on:set-modal-meta = "setModalMeta"
+
+        :film = "featuredFilm"
+        :endDate = "featuredFilm.releaseDate"
+        :ticketsUrl = "MovieList.featuredFilm.tickets_url"
+        :timerIsLarge = "true"
+
+    >
+      
+      <template v-slot:navbar>
+        <NavigationBar></NavigationBar>
+      </template>
+
+      <template v-slot:smtimer>
+        <CountdownTimer 
+
+            v-on:set-modal-meta = "setModalMeta"
+
+            :film = "subFilm"
+            :endDate = "subFilm.releaseDate"
+            :ticketsUrl = "MovieList.otherFeatured.tickets_url"
+            :timerIsLarge = "false"
+
+        >
+        </CountdownTimer>
+      </template>
+
+    </CountdownTimer>
 
   	<h2 class = "page-name" id = "timeline-main">
   		Timeline
@@ -12,18 +37,23 @@
 
    	<Timeline v-on:set-modal-meta = "setModalMeta"></Timeline>
 
-    <TrailerModal :selectedMovie = "selectedMovie" 
-      :startPlaying = "trailerIsPlaying"
+    <TrailerModal 
 
+      :selectedMovie = "selectedMovie" 
+      :startPlaying = "trailerIsPlaying"
       v-on:hide-player = "hidePlayer()"
+
     ></TrailerModal>
   </div>
 </template>
 
 <script>
 import CountdownTimer from './components/CountdownTimer.vue';
+import NavigationBar from './components/NavigationBar.vue';
 import TrailerModal from './components/TrailerModal.vue';
 import Timeline from './components/Timeline.vue';
+
+import MovieList from './data/movies.js';
 
 export default {
   name: 'app',
@@ -31,17 +61,19 @@ export default {
   data () {
     return {
 
-        countDownFilm: {
-          id: 1,
-          name: 'Captain Marvel',
-          releaseDate: 'March 8, 2019',
-          trailerUrl: 'https://www.youtube.com/watch?v=0LHxvxdRnYc',
-          poster: 'cpt-marvel.jpg'
-        },
+        MovieList: MovieList,
 
         selectedMovie: this.countDownFilm,
 
-        trailerIsPlaying: false
+        trailerIsPlaying: false,
+
+        featuredFilm: MovieList.movieList.find( (m, i) => { 
+            return m.id === MovieList.featuredFilm.id 
+        } ),
+
+        subFilm: MovieList.movieList.find( (m, i) => { 
+            return m.id === MovieList.otherFeatured.id
+        } )
     }
   },
 
@@ -50,6 +82,7 @@ export default {
 
       this.selectedMovie = val.selectedMovie;
       this.trailerIsPlaying = val.trailerIsPlaying;
+
     },
 
     hidePlayer: function () {
@@ -64,6 +97,7 @@ export default {
   components: {
   	CountdownTimer,
     TrailerModal,
+    NavigationBar,
   	Timeline
   }
 }

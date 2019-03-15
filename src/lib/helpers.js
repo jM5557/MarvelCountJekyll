@@ -1,5 +1,7 @@
 import Vue from 'vue';
 
+import store from './../Store.js';
+
 const getImageWithLocalPath = function (image_filename, sub_folder) {
 
 	if ( typeof sub_folder === "undefined" ) {
@@ -27,6 +29,7 @@ const renderComponentIfElementExists = function (el_id, el_component) {
 
 	new Vue({
 	  el: '#' + el_id,
+	  store,
 	  render: (h) =>  { return h(el_component) }
 	});
 }

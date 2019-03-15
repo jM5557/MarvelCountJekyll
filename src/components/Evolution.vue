@@ -7,7 +7,9 @@
 			:key = "character.id" >
 		</EvolutionItem>
 
-		<h6 class = "disclaimer">More Heroes Coming Soon...</h6>
+		<h6 class = "disclaimer">
+			More Heroes Coming Soon...
+		</h6>
 	</div>
 </template>
 

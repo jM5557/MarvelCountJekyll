@@ -1,14 +1,24 @@
 <template>
-	<div id = "timer-wrapper">
-		<div id = "timer-inner-wrapper" :class = "(days < 3) ? 'timer-warning' : ''">
-			<img alt = "Latest Film Logo" src = "./../assets/images/logo-latest.png" />
+	<div 
+		:class = " (timerIsLarge) ? 'large-timer timer-wrapper' : 'small-timer timer-wrapper'" 
+		:style = " { 
+			background: 'url(' +  filmWallpaper + ') no-repeat center top 0px', 
+			backgroundSize: 'cover'
+
+		} "
+	>
+		<slot name = "navbar"></slot>
+
+		<div :class = "(days < 3) ? 'inner-wrapper timer-warning' : 'inner-wrapper'">
+			<img alt = "Latest Film Logo" :src = " '/dist/Assets/' + film.logo " />
 			
 			<a class = "get-tickets-link" 
 			v-if = "(days < 1
 				&& hours < 1
 				&& minutes < 1
 				&& seconds < 1)"
-				:href = "ticketsUrl">
+				:href = "ticketsUrl"
+			>
 				Get Tickets Now
 			</a>
 
@@ -46,34 +56,60 @@
 				</div>
 			</div>
 
-			<button v-on:click="playTrailer(film, !trailerIsPlaying)" class = 'trailer-btn'>Latest Trailer</button>
+			<button 
+				v-on:click="playTrailer(film, !trailerIsPlaying)" 
+				class = 'trailer-btn'
+
+				v-if = "timerIsLarge"
+			>
+				Latest Trailer
+			</button>
 			
 		</div>
-	
-			
 
-		<NavigationBar></NavigationBar>
+		<slot name = "smtimer">
+		</slot>
 
-		<div class = "scroll-notify center" v-scroll-to="'#timeline-main'">
+		<div 
+			class = "scroll-notify center" 
+			v-scroll-to="'#timeline-main'"
+
+			v-if="timerIsLarge"
+		>
 			<p>scroll</p>
 			<p class = "scroll-icon"></p>
 		</div>
 
-		<a :href="'https://twitter.com/share?url=' + getCurrentWebpage + '&text=' + getTweetMessage(days, hours, minutes) " class="twitter-share-button twitter-icon" data-show-count="false"></a>
+		<a 
+			:href="'https://twitter.com/share?url=' + getCurrentWebpage + '&text=' + getTweetMessage(days, hours, minutes) " 
+			
+			class="twitter-share-button twitter-icon" 
+			data-show-count="false"
+			
+			v-if = "timerIsLarge"
+		>
+			
+		</a>
 
-		<a :href="'https://www.reddit.com/submit?styled=off&url=' + getCurrentWebpage + '&title=' + getTweetMessage(days, hours, minutes)" class = "reddit-icon">
+		<a 
+			:href="'https://www.reddit.com/submit?styled=off&url=' + getCurrentWebpage + '&title=' + getTweetMessage(days, hours, minutes)" 
+			class = "reddit-icon"
+
+			v-if = "timerIsLarge"
+		>
 		</a>
 	</div>
 </template>
 
 <script>
+
 	import TrailerModal from './TrailerModal.vue';
 	import NavigationBar from './NavigationBar.vue';
 
 	export default {
 		name: 'countdown-timer',
 
-		props: ['endDate', 'film', 'ticketsUrl'],
+		props: ['timerIsLarge', 'endDate', 'film', 'ticketsUrl'],
 
 		data () {
 			return {
@@ -83,7 +119,9 @@
 
 				trailerIsPlaying: false,
 
-				getCurrentWebpage: window.location
+				getCurrentWebpage: window.location,
+
+				filmWallpaper: "'/dist/Assets/" + this.film.wallpaper + "'"
 			}
 		},
 
