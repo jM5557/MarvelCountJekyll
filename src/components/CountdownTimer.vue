@@ -59,20 +59,15 @@
 			<button 
 				v-on:click="playTrailer(film, !trailerIsPlaying)" 
 				class = 'trailer-btn'
-
-				v-if = "timerIsLarge"
 			>
 				Latest Trailer
 			</button>
 			
 		</div>
 
-		<slot name = "smtimer">
-		</slot>
-
 		<div 
 			class = "scroll-notify center" 
-			v-scroll-to="'#timeline-main'"
+			v-scroll-to="'#next-timer'"
 
 			v-if="timerIsLarge"
 		>
@@ -81,21 +76,52 @@
 		</div>
 
 		<a 
-			:href="'https://twitter.com/share?url=' + getCurrentWebpage + '&text=' + getTweetMessage(days, hours, minutes) " 
+			:href="'https://twitter.com/share?url=' + getCurrentWebpage + '&text=' + getMessageByTimer(days, hours, minutes) " 
 			
 			class="twitter-share-button twitter-icon" 
 			data-show-count="false"
 			
-			v-if = "timerIsLarge"
+			v-if = "(
+				timerIsLarge 
+				&& days > 1
+				&& hours > 1
+				&& minutes > 1
+				&& seconds > 1
+			)"
 		>
 			
 		</a>
 
 		<a 
-			:href="'https://www.reddit.com/submit?styled=off&url=' + getCurrentWebpage + '&title=' + getTweetMessage(days, hours, minutes)" 
+			:href="'https://twitter.com/share?url=' + getCurrentWebpage + '&text=' + getMessage('Captain Marvel is out in theaters!') " 
+			
+			class="twitter-share-button twitter-icon" 
+			data-show-count="false"
+			
+			v-else-if="timerIsLarge"
+		>
+			
+		</a>
+
+		<a 
+			:href="'https://www.reddit.com/submit?styled=off&url=' + getCurrentWebpage + '&title=' + getMessageByTimer(days, hours, minutes)" 
 			class = "reddit-icon"
 
-			v-if = "timerIsLarge"
+			v-if = "(
+				timerIsLarge 
+				&& days > 1
+				&& hours > 1
+				&& minutes > 1
+				&& seconds > 1
+			)"
+		>
+		</a>
+
+		<a 
+			:href="'https://www.reddit.com/submit?styled=off&url=' + getCurrentWebpage + '&title=' + getMessage('Captain Marvel is out in theaters!')" 
+			class = "reddit-icon"
+
+			v-else-if="timerIsLarge"
 		>
 		</a>
 	</div>
@@ -135,7 +161,7 @@
 				} );
 			},
 
-			getTweetMessage: function (days, hours, minutes) {
+			getMessageByTimer: function (days, hours, minutes) {
 
 				var message = days + " Days, " + hours + " Hours, "
 					+ minutes + " Minutes Until "
@@ -143,6 +169,12 @@
 
 				return message.replace(' ', '%20').replace(',', '+').replace('!', '%21');
 				
+			},
+
+			getMessage: function (msg) {
+
+				return msg.replace(' ', '%20').replace(',', '+').replace('!', '%21');
+
 			}
 		},
 

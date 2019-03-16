@@ -1,8 +1,12 @@
 <template>
 	<div id = "timeline-wrapper">
-		<button v-on:click="toggleView()" :class = "(selectedView == 'grid-view') ? 'toggle-view-btn' : 'toggle-view-btn on' ">
-			View Timeline
-		</button>
+		<div class = "toggle-view-wrapper">
+			Grid
+			<button v-on:click="toggleView()" :class = "(selectedView == 'grid-view') ? 'toggle-view' : 'toggle-view on' ">
+			</button>
+
+			Timeline
+		</div>
 
 		<ul :class = "selectedView">
 

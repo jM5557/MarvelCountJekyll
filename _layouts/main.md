@@ -25,6 +25,16 @@
     <title>{{ page.title }}</title>
 
 	<link rel="stylesheet" href="{{ site.baseurl }}/scss/style.css">
+
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-136382055-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-136382055-1');
+</script>
     
   </head>
   <body>

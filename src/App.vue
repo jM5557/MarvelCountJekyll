@@ -15,8 +15,11 @@
         <NavigationBar></NavigationBar>
       </template>
 
-      <template v-slot:smtimer>
-        <CountdownTimer 
+    </CountdownTimer>
+
+    <div id = "next-timer" class="small-timer-wrapper">
+      
+      <CountdownTimer 
 
             v-on:set-modal-meta = "setModalMeta"
 
@@ -27,9 +30,7 @@
 
         >
         </CountdownTimer>
-      </template>
-
-    </CountdownTimer>
+    </div>
 
   	<h2 class = "page-name" id = "timeline-main">
   		Timeline
