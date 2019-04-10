@@ -200,20 +200,32 @@ export default {
 			wallpaper: 'avengers-4-wp.jpg',
 
 			characterID: [ 1, 2, 3, 4, 5, 6, 10, 15 ]
+		},
+		{
+			id: 23,
+			name: 'Spider-Man: Far From Home',
+			releaseDate: 'July 5, 2019',
+			trailerUrl: 'https://www.youtube.com/watch?v=DYYtuKyMtY8',
+
+			poster: 'spiderman-2-wp.jpg',
+			logo: 'spiderman-2-logo.png',
+			wallpaper: 'spiderman-2-wp.jpg',
+
+			characterID: [ 9 ]
 		}
 	],
 
 	featuredFilm: {
 
-		id: 21,
-		tickets_url: "https://www.fandango.com/captain-marvel-2019-188283/movie-times"
+		id: 22,
+		tickets_url: "https://www.fandango.com/avengers-endgame-215871/movie-overview"
 
 	},
 
 	otherFeatured: {
 
-		id: 22,
-		tickets_url: "https://www.fandango.com/avengers-endgame-215871/movie-overview"
+		id: 23,
+		tickets_url: ""
 
 	}
 }
