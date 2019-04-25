@@ -58,7 +58,7 @@
 		data () {
 			return {
 				CharacterList: CharacterList.characterList,
-				selectedCharacter: CharacterList.characterList[0]
+				selectedCharacter: null
 			}
 		},
 
