@@ -76,7 +76,9 @@ module.exports = {
 
     new VueLoaderPlugin(),
 
-    new CleanWebpackPlugin(['dist/*'])
+    new CleanWebpackPlugin(['dist/*']),
+
+    new webpack.HotModuleReplacementPlugin()
 
   ],
   resolve: {
@@ -88,7 +90,9 @@ module.exports = {
   devServer: {
     historyApiFallback: true,
     noInfo: true,
-    overlay: true
+    overlay: true,
+    contentBase: path.join(__dirname, "_site")
+
   },
   performance: {
     hints: false
@@ -100,17 +104,20 @@ if (process.env.NODE_ENV === 'production') {
   module.exports.devtool = '#source-map'
   // http://vue-loader.vuejs.org/en/workflow/production.html
   module.exports.plugins = (module.exports.plugins || []).concat([
+    
     new webpack.DefinePlugin({
       'process.env': {
         NODE_ENV: '"production"'
       }
     }),
+
     new webpack.optimize.UglifyJsPlugin({
       sourceMap: true,
       compress: {
         warnings: false
       }
     }),
+
     new webpack.LoaderOptionsPlugin({
       minimize: true
     })

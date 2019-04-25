@@ -2,12 +2,24 @@
 	
 	<div id = "comparison-wrapper">
 
-		<div id = "comparison-menu-toggle" v-on:click = "displayMenu" :class = "menuIsVisible ? 'on hamburger-menu has_text' : 'hamburger-menu has_text'">Choose A Hero</div>
+		<div id = "comparison-menu-toggle" 
+			v-on:click = "displayMenu" 
+			:class = "menuIsVisible ? 'on hamburger-menu has_text' : 'hamburger-menu has_text'"
+		>
+			Choose A Hero
+		</div>
 
-		<ul id = "comparison-menu" v-if="menuIsVisible" class = "toggle-menu">
-			<li v-for="(character, index) in characterList" v-on:click="setSelectedCharacter(character)" :class = "(character == selectedCharacter) ? 'selected' : ''">
+		<ul id = "comparison-menu" 
+			v-if="menuIsVisible" 
+			class = "toggle-menu"
+		>
+			<li 
+				v-for="(character, index) in characterList" v-on:click="setSelectedCharacter(character)" 
+				:class = "(character == selectedCharacter) ? 'selected' : ''"
+			>
 				{{ character.name }}
 			</li>
+			
 			<li>
 				<p class = "disclaimer">More Heroes Coming Soon...</p>
 			</li>

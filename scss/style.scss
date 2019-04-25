@@ -261,15 +261,18 @@ tr {
 		display: block;
 		font-family: $fontMid;
 		letter-spacing: 2px;
-		font-size: 0.85rem;
-		background: none;
+		font-size: 0.70rem;
+		background: #111;
 		border: none;
 		color: #fefefe;
 		text-align: center;
 		padding: 20px 15px;
-		margin: auto auto;
+		margin: 10px auto;
 		text-shadow: 1px 1px 1px #111;
 		text-transform: uppercase;
+
+	    border-radius: 500px;
+	    box-shadow: inset 68px 0px 80px -25px #3e1bb3;
 	}
 
 	.twitter-share-button,
@@ -810,14 +813,15 @@ tr {
 		@include slideFromLeftAnimation;
 
 		h2 {
-			font-size: 1.65rem;
-			letter-spacing: 2px;
-			padding: 15px 5%;
-			background-color: $marvelRed;
-			text-align: left;
-			line-height: 2.15rem;
-			display: block;
-			width: 100%;
+			font-size: 1.35rem;
+		    letter-spacing: 2px;
+		    padding: 15px 5%;
+		    background-color: #e23636;
+		    text-align: left;
+		    line-height: 2.15rem;
+		    display: block;
+		    width: 100%;
+		    box-sizing: border-box;
 		}
 
 		tr { 
@@ -836,15 +840,16 @@ tr {
 
 		.hide-player {
 			margin: 15px auto;
-			background-color: purple;
+			box-shadow: #3e1bb3 68px 0px 80px -25px inset;
 			color: #fefefe;
-			box-shadow: 0px 5px 20px 5px #111;
-			font-size: 0.95rem;
+			background-color: #111;
+			font-size: 0.85rem;
 			display: block;
-			width: 90%;
+			width: 80%;
 			border: none;
-			padding: 20px;
-			border-radius: 2px;
+			padding: 15px 6px;
+			box-sizing: border-box;
+			border-radius: 500px;
 
 			&:hover {
 				opacity: 0.85;
@@ -870,7 +875,7 @@ tr {
 				left: 0;
 				top: 0;
 				bottom: 0;
-				width: 25%;
+				width: 45%;
 				padding: 15px;
 				font-size: 1.45rem;
 				line-height: 2rem;
@@ -878,21 +883,19 @@ tr {
 			}
 
 			h5 {
-				font-size: 1.45rem;
+				font-size: 0.85rem;
 				padding: 20px 5%;
-				margin-left: 30%;
-				height: 26%;
+				margin-right: 0%;
+				margin-left: auto;
+				margin-top: 12px;
+				height: 20%;
+				width: 45%;
 			}
 
 			.hide-player {
 				margin-top: 0%;
-				margin-left: 30%;
-				width: 75%;
-				padding-top: 20px;
-				padding-bottom: 20px;
-				font-size: 1.15rem;
-				box-shadow: none;
-				height: 64%;
+				margin-right: 5%;
+				width: 45%;
 
 			}
 		}
@@ -949,29 +952,37 @@ tr {
 }
 
 #comparison-item-wrapper {
-	padding-top: 35px;
 
-	.comp-item {
-		display: inline-block;
-		height: 450px;
-		max-width: 450px;
-		width: 45%;
-		background-size: cover;
+	width: 85%;
+	max-width: 900px;
+	margin: auto;
+	opacity: 0;
+	animation: fadeIn 1s 1 forwards;
+
+	#comparison-item-inner-wrapper {
+
+		min-height: 360px;
+		margin: auto auto 10px auto;
+		display: block;
+		background-size: auto 100%;
+		background-color: #111;
+		background-position: center top 0px;
 		background-repeat: no-repeat;
-		background-position: top 0px center;
-		margin: 5px;
-		box-shadow: 3px 5px 25px 15px #111;
-		border-radius: 3px;
 
-		@media all and (max-width: $bp_mobile) {
-			width: 45%;
-			height: 45vw;
+		position: relative;
+		z-index: 2;
+
+		.toggle-view-wrapper {
+			background-color: #232323;
+
+			position: absolute;
+			margin-bottom: auto;
+			bottom: 20px;
+			right: -25px;
+
+			padding: 15px;
 		}
 
-		@media all and (max-width: $bp_mobile_sm) {
-			width: 75%;
-			height: 75vw;
-		}
 	}
 
 	.main-stats {
@@ -989,38 +1000,24 @@ tr {
 		font-size: 1.25rem;
 	}
 
-	ul {
-		display: block;
-		text-align: left;
-	}
-
-	.movies {
-		display: inline-block;
-		margin: 15px 20px;
-		font-size: 0.85rem;
-	}
-
 	.desc {
 		font-size: 1.05rem;
 		font-family: $fontNormal;
+	}
+
+	ul {
+		text-align: unset;
 	}
 	
 	#comparison-item-stats {
 		max-width: 900px;
 		margin: auto;
-	}
-}
 
-#evolution-wrapper {
-	display: block;
-	max-width: 1280px;
-	margin: 150px auto auto auto;
-	padding: 15px 20px;
-	text-align: center;
+		padding: 0px 25px 15px;
 
-	button {
-		margin-left: 15px;
-		display: block;
+		@media all and (max-width: $bp_mobile_sm) {
+			padding: 0px 25px 0px;
+		}
 	}
 }
 
@@ -1293,7 +1290,7 @@ footer {
 			padding: 15px 15px;
 			text-align: center;
 			box-shadow: 0px 3px 15px 5px #111;
-			border-radius: 3px;
+			border-radius: 300px;
 		}
 
 		@media all and (max-width: $bp_mobile) {
@@ -1507,6 +1504,201 @@ footer {
 		}
 
 	}
+}
+
+.character-list {
+
+	list-style-type: none;
+
+	li {
+		display: inline-block;
+		position: relative;
+		vertical-align: top;
+
+		@media all and (max-width: $bp_mobile_sm) {
+			display: block;
+		}
+	}
+
+	.character-inner-wrapper {
+		display: block;
+		background-color: #2e2e2e;
+		margin: 5px;
+		box-shadow: 0px 5px 25px -6px #111;
+		width: 270px;
+		cursor: pointer;
+
+		&:hover {
+    		box-shadow: inset -25px 0px 75px -25px #0d3ade;
+		}
+
+		@media all and (max-width: $bp_mobile_sm) {
+			width: 85%;
+			margin: 7.5px auto;
+		}
+	}
+
+	.character-thumb {
+
+		width: 105px;
+		height: 75px;
+		background-size: cover;
+		display: inline-block;
+		vertical-align: middle;
+
+	}
+
+	.character-details {
+		display: inline-block;
+		vertical-align: middle;
+		padding: 15px;
+		position: relative;
+
+		h2 {
+			font-size: 1.15rem;
+			width: 120px;
+			display: block;
+			text-overflow: ellipsis;
+			overflow: hidden;
+			white-space: nowrap;
+		}
+	}
+
+}
+
+.char-content-wrapper {
+
+	margin-top: 45px;
+	margin-bottom: 45px;
+
+	&.left {
+		text-align: left;
+	}
+
+	&.right, ul {
+		text-align: right;
+	}
+
+	h2 {
+		font-size: 2.20rem;
+		padding: 15px 0px;
+	}
+
+	li, .related-character-thumb {
+		display: inline-block;
+		position: relative;
+		vertical-align: top;
+		cursor: pointer;
+
+		&:hover { opacity: 0.70; }
+	}
+
+}
+
+.related-movies {
+
+	display: block;
+	text-align: right;
+	
+	li {
+		width: 120px;
+		min-height: 160px;
+	}
+
+	.related-movie-thumb {
+		display: block;
+		width: 100%;
+		min-height: 160px;
+		background-size: cover;
+	}
+
+	h3 {
+		display: block;
+		text-align: right;
+		margin-top: -5px;
+	}
+
+	.movies {
+		display: inline-block;
+		margin: 15px 20px;
+		font-size: 0.85rem;
+	}
+
+	@media all and (max-width: $bp_mobile_sm) {
+
+		li.movies {
+			width: 44%;
+			min-height: 120px;
+			margin: 2.5px;
+		}
+
+	}
+
+}
+
+.related-character-wrapper {
+	text-align: left;
+}
+
+.related-character-thumb {
+
+	display: inline-block;
+	width: 125px;
+	margin: 2.5px 2.5px;
+	cursor: pointer;
+	border-radius: 4px;
+	vertical-align: top;
+
+	h3 {
+		text-align: left;
+		padding: 8px 0px;
+		font-weight: lighter;
+		font-size: 0.85rem;
+		margin-top: -10px;
+	}
+
+	.related-thumb {
+		width: 100%;
+		height: 80px;
+		background-size: cover;
+	}
+
+}
+
+.character-item {
+	padding: 0px 0px 30px 0px;
+	text-align: center;
+	max-width: 900px;
+	margin: auto;
+	position: relative;
+
+	.close-btn {
+		position: absolute;
+		background-color: #2e2e2e;
+		box-shadow: -5px 7px 25px -7px #111;
+		padding: 8px 12px;
+		font-size: 1.25rem;
+		font-family: $fontHeavy;
+		cursor: pointer;
+		top: 20px;
+		left: 7px;
+		z-index: 3;
+
+		&:hover, &:focus {
+			background-color: $marvelRed;
+		}
+	}
+
+	#comparison-item-stats {
+		text-shadow: -3px 3px 25px #111;
+	}
+
+}
+
+.page-item {
+	margin: 150px auto auto auto;
+	display: block;
+	max-width: 1280px;
 }
 
 .disclaimer {

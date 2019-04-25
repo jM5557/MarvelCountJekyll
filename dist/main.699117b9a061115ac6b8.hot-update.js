@@ -1,0 +1,15 @@
+webpackHotUpdate("main",{
+
+/***/ "./node_modules/vue-loader/lib/loaders/templateLoader.js?!./node_modules/vue-loader/lib/index.js?!./src/components/RelatedCharacterList.vue?vue&type=template&id=cbb099a8&":
+/*!**************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options!./src/components/RelatedCharacterList.vue?vue&type=template&id=cbb099a8& ***!
+  \**************************************************************************************************************************************************************************************************************/
+/*! exports provided: render, staticRenderFns */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return render; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"staticRenderFns\", function() { return staticRenderFns; });\nvar render = function() {\n  var _vm = this\n  var _h = _vm.$createElement\n  var _c = _vm._self._c || _h\n  return _c(\"div\", { staticClass: \"char-content-wrapper left\" }, [\n    _c(\"h2\", [_vm._v(\"Related Characters\")]),\n    _vm._v(\" \"),\n    _c(\n      \"div\",\n      { staticClass: \"related-character-wrapper\" },\n      _vm._l(_vm.getRelatedCharacters, function(character) {\n        return _c(\n          \"span\",\n          {\n            directives: [\n              {\n                name: \"scroll-to\",\n                rawName: \"v-scroll-to\",\n                value: \"#top-header\",\n                expression: \"'#top-header'\"\n              }\n            ],\n            staticClass: \"related-character-thumb\",\n            on: {\n              click: function($event) {\n                return _vm.handleCharacterClick(character)\n              }\n            }\n          },\n          [\n            _c(\"div\", {\n              staticClass: \"related-thumb\",\n              style:\n                \"background-image: url('\" +\n                _vm.getImageWithLocalPath(character.comparison.film.imageUrl) +\n                \"');\"\n            }),\n            _vm._v(\" \"),\n            _c(\"h3\", [_vm._v(_vm._s(character.name))])\n          ]\n        )\n      }),\n      0\n    )\n  ])\n}\nvar staticRenderFns = []\nrender._withStripped = true\n\n\n\n//# sourceURL=webpack:///./src/components/RelatedCharacterList.vue?./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options");
+
+/***/ })
+
+})

@@ -199,7 +199,7 @@ export default {
 			logo: 'avengers-4-logo.png',
 			wallpaper: 'avengers-4-wp.jpg',
 
-			characterID: [ 1, 2, 3, 4, 5, 6, 10, 15 ]
+			characterID: [ 1, 2, 3, 4, 5, 6, 10, 14, 15 ]
 		},
 		{
 			id: 23,
@@ -218,14 +218,18 @@ export default {
 	featuredFilm: {
 
 		id: 22,
-		tickets_url: "https://www.fandango.com/avengers-endgame-215871/movie-overview"
+		tickets_url: "https://www.fandango.com/avengers-endgame-215871/movie-overview",
+
+		shadow_color: "#3e1bb3"
 
 	},
 
 	otherFeatured: {
 
 		id: 23,
-		tickets_url: ""
+		tickets_url: "",
+
+		shadow_color: "crimson"
 
 	}
 }

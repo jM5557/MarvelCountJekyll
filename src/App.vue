@@ -2,12 +2,11 @@
   <div id="app">
    	<CountdownTimer 
 
-        v-on:set-modal-meta = "setModalMeta"
-
         :film = "featuredFilm"
         :endDate = "featuredFilm.releaseDate"
         :ticketsUrl = "MovieList.featuredFilm.tickets_url"
         :timerIsLarge = "true"
+        :shadowColor = "MovieList.featuredFilm.shadow_color"
 
     >
       
@@ -21,12 +20,11 @@
       
       <CountdownTimer 
 
-            v-on:set-modal-meta = "setModalMeta"
-
             :film = "subFilm"
             :endDate = "subFilm.releaseDate"
             :ticketsUrl = "MovieList.otherFeatured.tickets_url"
             :timerIsLarge = "false"
+            :shadowColor = "MovieList.otherFeatured.shadow_color"
 
         >
         </CountdownTimer>
@@ -36,22 +34,14 @@
   		Timeline
   	</h2>
 
-   	<Timeline v-on:set-modal-meta = "setModalMeta"></Timeline>
+   	<Timeline></Timeline>
 
-    <TrailerModal 
-
-      :selectedMovie = "selectedMovie" 
-      :startPlaying = "trailerIsPlaying"
-      v-on:hide-player = "hidePlayer()"
-
-    ></TrailerModal>
   </div>
 </template>
 
 <script>
 import CountdownTimer from './components/CountdownTimer.vue';
 import NavigationBar from './components/NavigationBar.vue';
-import TrailerModal from './components/TrailerModal.vue';
 import Timeline from './components/Timeline.vue';
 
 import MovieList from './data/movies.js';
@@ -64,10 +54,6 @@ export default {
 
         MovieList: MovieList,
 
-        selectedMovie: this.countDownFilm,
-
-        trailerIsPlaying: false,
-
         featuredFilm: MovieList.movieList.find( (m, i) => { 
             return m.id === MovieList.featuredFilm.id 
         } ),
@@ -79,25 +65,11 @@ export default {
   },
 
   methods: {
-    setModalMeta: function (val) {
-
-      this.selectedMovie = val.selectedMovie;
-      this.trailerIsPlaying = val.trailerIsPlaying;
-
-    },
-
-    hidePlayer: function () {
-        if ( this.trailerIsPlaying == false ) {
-          return;
-        }
-
-        this.trailerIsPlaying = false;
-      },
+    
   },
 
   components: {
   	CountdownTimer,
-    TrailerModal,
     NavigationBar,
   	Timeline
   }

@@ -2,6 +2,38 @@ import Vue from 'vue';
 
 import store from './../Store.js';
 
+import TrailerModal from './../components/TrailerModal.vue';
+
+const renderTrailer = function (vid) {
+
+	let temp = Vue.extend({
+
+	  template: '<TrailerModal :selectedMovie = "movie" />',
+	  
+	  data: function () {
+
+	  	return {
+
+	  		movie: vid
+
+	  	}
+
+	  },
+
+	  components: {
+
+		TrailerModal
+
+	  }
+
+
+	});
+	 
+	var component = new temp().$mount();
+	document.body.appendChild(component.$el);
+
+}
+
 const getImageWithLocalPath = function (image_filename, sub_folder) {
 
 	if ( typeof sub_folder === "undefined" ) {
@@ -27,7 +59,7 @@ const renderComponentIfElementExists = function (el_id, el_component) {
 		return;
 	}
 
-	new Vue({
+	return new Vue({
 	  el: '#' + el_id,
 	  store,
 	  render: (h) =>  { return h(el_component) }
@@ -35,6 +67,7 @@ const renderComponentIfElementExists = function (el_id, el_component) {
 }
 
 export { 
+	renderTrailer,
 	getImageWithLocalPath,
-	renderComponentIfElementExists 
+	renderComponentIfElementExists
 }

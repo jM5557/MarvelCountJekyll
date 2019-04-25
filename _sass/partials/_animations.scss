@@ -89,3 +89,13 @@
 @mixin slideInUpAnimation () {
 	animation: slideInUp 0.45s 1 forwards;
 }
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}

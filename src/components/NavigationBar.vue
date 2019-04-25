@@ -5,7 +5,7 @@
 
 		<div id = "menu-content-wrapper" :class = "displayMenu ? 'on' : 'off'">
 
-			<a href = "/comparisons">Comparisons</a>
+			<a href = "/characters">Characters</a>
 			<a href="/about">About</a>
 		
 		</div>

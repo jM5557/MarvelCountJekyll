@@ -18,7 +18,6 @@
 			>
 				<TimelineItem
 					:movie = "movie"
-					:startPlaying = "trailerIsPlaying"
 				>
 				</TimelineItem>
 			</li>
@@ -30,7 +29,7 @@
 <script>
 	import MovieList from './../data/movies.js';
 
-	import { getImageWithLocalPath } from './../lib/helpers.js';
+	import { getImageWithLocalPath, renderTrailer } from './../lib/helpers.js';
 
 	import TimelineItem from './TimelineItem.vue';
 	import SearchBar from './SearchBar.vue';
@@ -47,8 +46,6 @@
 
 				selectedMovie: MovieList.movieList[MovieList.movieList.length - 1],
 
-				trailerIsPlaying: false,
-
 				selectedView: 'grid-view'
 			}
 		},
@@ -56,13 +53,9 @@
 		methods: {
 
 			setSelectedMovie: function (movie) {
-				this.selectedMovie = movie;
-				this.trailerIsPlaying = true;
+				
+				renderTrailer(movie);
 
-				this.$emit('set-modal-meta', {
-					selectedMovie: movie,
-					trailerIsPlaying: true
-				});
 			},
 
 			toggleView: function () {

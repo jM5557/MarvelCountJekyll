@@ -1,4 +1,705 @@
 /******/ (function(modules) { // webpackBootstrap
+/******/ 	function hotDisposeChunk(chunkId) {
+/******/ 		delete installedChunks[chunkId];
+/******/ 	}
+/******/ 	var parentHotUpdateCallback = window["webpackHotUpdate"];
+/******/ 	window["webpackHotUpdate"] = // eslint-disable-next-line no-unused-vars
+/******/ 	function webpackHotUpdateCallback(chunkId, moreModules) {
+/******/ 		hotAddUpdateChunk(chunkId, moreModules);
+/******/ 		if (parentHotUpdateCallback) parentHotUpdateCallback(chunkId, moreModules);
+/******/ 	} ;
+/******/
+/******/ 	// eslint-disable-next-line no-unused-vars
+/******/ 	function hotDownloadUpdateChunk(chunkId) {
+/******/ 		var script = document.createElement("script");
+/******/ 		script.charset = "utf-8";
+/******/ 		script.src = __webpack_require__.p + "" + chunkId + "." + hotCurrentHash + ".hot-update.js";
+/******/ 		if (null) script.crossOrigin = null;
+/******/ 		document.head.appendChild(script);
+/******/ 	}
+/******/
+/******/ 	// eslint-disable-next-line no-unused-vars
+/******/ 	function hotDownloadManifest(requestTimeout) {
+/******/ 		requestTimeout = requestTimeout || 10000;
+/******/ 		return new Promise(function(resolve, reject) {
+/******/ 			if (typeof XMLHttpRequest === "undefined") {
+/******/ 				return reject(new Error("No browser support"));
+/******/ 			}
+/******/ 			try {
+/******/ 				var request = new XMLHttpRequest();
+/******/ 				var requestPath = __webpack_require__.p + "" + hotCurrentHash + ".hot-update.json";
+/******/ 				request.open("GET", requestPath, true);
+/******/ 				request.timeout = requestTimeout;
+/******/ 				request.send(null);
+/******/ 			} catch (err) {
+/******/ 				return reject(err);
+/******/ 			}
+/******/ 			request.onreadystatechange = function() {
+/******/ 				if (request.readyState !== 4) return;
+/******/ 				if (request.status === 0) {
+/******/ 					// timeout
+/******/ 					reject(
+/******/ 						new Error("Manifest request to " + requestPath + " timed out.")
+/******/ 					);
+/******/ 				} else if (request.status === 404) {
+/******/ 					// no update available
+/******/ 					resolve();
+/******/ 				} else if (request.status !== 200 && request.status !== 304) {
+/******/ 					// other failure
+/******/ 					reject(new Error("Manifest request to " + requestPath + " failed."));
+/******/ 				} else {
+/******/ 					// success
+/******/ 					try {
+/******/ 						var update = JSON.parse(request.responseText);
+/******/ 					} catch (e) {
+/******/ 						reject(e);
+/******/ 						return;
+/******/ 					}
+/******/ 					resolve(update);
+/******/ 				}
+/******/ 			};
+/******/ 		});
+/******/ 	}
+/******/
+/******/ 	var hotApplyOnUpdate = true;
+/******/ 	// eslint-disable-next-line no-unused-vars
+/******/ 	var hotCurrentHash = "f6e24a0c218d61d1c9f5";
+/******/ 	var hotRequestTimeout = 10000;
+/******/ 	var hotCurrentModuleData = {};
+/******/ 	var hotCurrentChildModule;
+/******/ 	// eslint-disable-next-line no-unused-vars
+/******/ 	var hotCurrentParents = [];
+/******/ 	// eslint-disable-next-line no-unused-vars
+/******/ 	var hotCurrentParentsTemp = [];
+/******/
+/******/ 	// eslint-disable-next-line no-unused-vars
+/******/ 	function hotCreateRequire(moduleId) {
+/******/ 		var me = installedModules[moduleId];
+/******/ 		if (!me) return __webpack_require__;
+/******/ 		var fn = function(request) {
+/******/ 			if (me.hot.active) {
+/******/ 				if (installedModules[request]) {
+/******/ 					if (installedModules[request].parents.indexOf(moduleId) === -1) {
+/******/ 						installedModules[request].parents.push(moduleId);
+/******/ 					}
+/******/ 				} else {
+/******/ 					hotCurrentParents = [moduleId];
+/******/ 					hotCurrentChildModule = request;
+/******/ 				}
+/******/ 				if (me.children.indexOf(request) === -1) {
+/******/ 					me.children.push(request);
+/******/ 				}
+/******/ 			} else {
+/******/ 				console.warn(
+/******/ 					"[HMR] unexpected require(" +
+/******/ 						request +
+/******/ 						") from disposed module " +
+/******/ 						moduleId
+/******/ 				);
+/******/ 				hotCurrentParents = [];
+/******/ 			}
+/******/ 			return __webpack_require__(request);
+/******/ 		};
+/******/ 		var ObjectFactory = function ObjectFactory(name) {
+/******/ 			return {
+/******/ 				configurable: true,
+/******/ 				enumerable: true,
+/******/ 				get: function() {
+/******/ 					return __webpack_require__[name];
+/******/ 				},
+/******/ 				set: function(value) {
+/******/ 					__webpack_require__[name] = value;
+/******/ 				}
+/******/ 			};
+/******/ 		};
+/******/ 		for (var name in __webpack_require__) {
+/******/ 			if (
+/******/ 				Object.prototype.hasOwnProperty.call(__webpack_require__, name) &&
+/******/ 				name !== "e" &&
+/******/ 				name !== "t"
+/******/ 			) {
+/******/ 				Object.defineProperty(fn, name, ObjectFactory(name));
+/******/ 			}
+/******/ 		}
+/******/ 		fn.e = function(chunkId) {
+/******/ 			if (hotStatus === "ready") hotSetStatus("prepare");
+/******/ 			hotChunksLoading++;
+/******/ 			return __webpack_require__.e(chunkId).then(finishChunkLoading, function(err) {
+/******/ 				finishChunkLoading();
+/******/ 				throw err;
+/******/ 			});
+/******/
+/******/ 			function finishChunkLoading() {
+/******/ 				hotChunksLoading--;
+/******/ 				if (hotStatus === "prepare") {
+/******/ 					if (!hotWaitingFilesMap[chunkId]) {
+/******/ 						hotEnsureUpdateChunk(chunkId);
+/******/ 					}
+/******/ 					if (hotChunksLoading === 0 && hotWaitingFiles === 0) {
+/******/ 						hotUpdateDownloaded();
+/******/ 					}
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 		fn.t = function(value, mode) {
+/******/ 			if (mode & 1) value = fn(value);
+/******/ 			return __webpack_require__.t(value, mode & ~1);
+/******/ 		};
+/******/ 		return fn;
+/******/ 	}
+/******/
+/******/ 	// eslint-disable-next-line no-unused-vars
+/******/ 	function hotCreateModule(moduleId) {
+/******/ 		var hot = {
+/******/ 			// private stuff
+/******/ 			_acceptedDependencies: {},
+/******/ 			_declinedDependencies: {},
+/******/ 			_selfAccepted: false,
+/******/ 			_selfDeclined: false,
+/******/ 			_disposeHandlers: [],
+/******/ 			_main: hotCurrentChildModule !== moduleId,
+/******/
+/******/ 			// Module API
+/******/ 			active: true,
+/******/ 			accept: function(dep, callback) {
+/******/ 				if (dep === undefined) hot._selfAccepted = true;
+/******/ 				else if (typeof dep === "function") hot._selfAccepted = dep;
+/******/ 				else if (typeof dep === "object")
+/******/ 					for (var i = 0; i < dep.length; i++)
+/******/ 						hot._acceptedDependencies[dep[i]] = callback || function() {};
+/******/ 				else hot._acceptedDependencies[dep] = callback || function() {};
+/******/ 			},
+/******/ 			decline: function(dep) {
+/******/ 				if (dep === undefined) hot._selfDeclined = true;
+/******/ 				else if (typeof dep === "object")
+/******/ 					for (var i = 0; i < dep.length; i++)
+/******/ 						hot._declinedDependencies[dep[i]] = true;
+/******/ 				else hot._declinedDependencies[dep] = true;
+/******/ 			},
+/******/ 			dispose: function(callback) {
+/******/ 				hot._disposeHandlers.push(callback);
+/******/ 			},
+/******/ 			addDisposeHandler: function(callback) {
+/******/ 				hot._disposeHandlers.push(callback);
+/******/ 			},
+/******/ 			removeDisposeHandler: function(callback) {
+/******/ 				var idx = hot._disposeHandlers.indexOf(callback);
+/******/ 				if (idx >= 0) hot._disposeHandlers.splice(idx, 1);
+/******/ 			},
+/******/
+/******/ 			// Management API
+/******/ 			check: hotCheck,
+/******/ 			apply: hotApply,
+/******/ 			status: function(l) {
+/******/ 				if (!l) return hotStatus;
+/******/ 				hotStatusHandlers.push(l);
+/******/ 			},
+/******/ 			addStatusHandler: function(l) {
+/******/ 				hotStatusHandlers.push(l);
+/******/ 			},
+/******/ 			removeStatusHandler: function(l) {
+/******/ 				var idx = hotStatusHandlers.indexOf(l);
+/******/ 				if (idx >= 0) hotStatusHandlers.splice(idx, 1);
+/******/ 			},
+/******/
+/******/ 			//inherit from previous dispose call
+/******/ 			data: hotCurrentModuleData[moduleId]
+/******/ 		};
+/******/ 		hotCurrentChildModule = undefined;
+/******/ 		return hot;
+/******/ 	}
+/******/
+/******/ 	var hotStatusHandlers = [];
+/******/ 	var hotStatus = "idle";
+/******/
+/******/ 	function hotSetStatus(newStatus) {
+/******/ 		hotStatus = newStatus;
+/******/ 		for (var i = 0; i < hotStatusHandlers.length; i++)
+/******/ 			hotStatusHandlers[i].call(null, newStatus);
+/******/ 	}
+/******/
+/******/ 	// while downloading
+/******/ 	var hotWaitingFiles = 0;
+/******/ 	var hotChunksLoading = 0;
+/******/ 	var hotWaitingFilesMap = {};
+/******/ 	var hotRequestedFilesMap = {};
+/******/ 	var hotAvailableFilesMap = {};
+/******/ 	var hotDeferred;
+/******/
+/******/ 	// The update info
+/******/ 	var hotUpdate, hotUpdateNewHash;
+/******/
+/******/ 	function toModuleId(id) {
+/******/ 		var isNumber = +id + "" === id;
+/******/ 		return isNumber ? +id : id;
+/******/ 	}
+/******/
+/******/ 	function hotCheck(apply) {
+/******/ 		if (hotStatus !== "idle") {
+/******/ 			throw new Error("check() is only allowed in idle status");
+/******/ 		}
+/******/ 		hotApplyOnUpdate = apply;
+/******/ 		hotSetStatus("check");
+/******/ 		return hotDownloadManifest(hotRequestTimeout).then(function(update) {
+/******/ 			if (!update) {
+/******/ 				hotSetStatus("idle");
+/******/ 				return null;
+/******/ 			}
+/******/ 			hotRequestedFilesMap = {};
+/******/ 			hotWaitingFilesMap = {};
+/******/ 			hotAvailableFilesMap = update.c;
+/******/ 			hotUpdateNewHash = update.h;
+/******/
+/******/ 			hotSetStatus("prepare");
+/******/ 			var promise = new Promise(function(resolve, reject) {
+/******/ 				hotDeferred = {
+/******/ 					resolve: resolve,
+/******/ 					reject: reject
+/******/ 				};
+/******/ 			});
+/******/ 			hotUpdate = {};
+/******/ 			var chunkId = "main";
+/******/ 			// eslint-disable-next-line no-lone-blocks
+/******/ 			{
+/******/ 				/*globals chunkId */
+/******/ 				hotEnsureUpdateChunk(chunkId);
+/******/ 			}
+/******/ 			if (
+/******/ 				hotStatus === "prepare" &&
+/******/ 				hotChunksLoading === 0 &&
+/******/ 				hotWaitingFiles === 0
+/******/ 			) {
+/******/ 				hotUpdateDownloaded();
+/******/ 			}
+/******/ 			return promise;
+/******/ 		});
+/******/ 	}
+/******/
+/******/ 	// eslint-disable-next-line no-unused-vars
+/******/ 	function hotAddUpdateChunk(chunkId, moreModules) {
+/******/ 		if (!hotAvailableFilesMap[chunkId] || !hotRequestedFilesMap[chunkId])
+/******/ 			return;
+/******/ 		hotRequestedFilesMap[chunkId] = false;
+/******/ 		for (var moduleId in moreModules) {
+/******/ 			if (Object.prototype.hasOwnProperty.call(moreModules, moduleId)) {
+/******/ 				hotUpdate[moduleId] = moreModules[moduleId];
+/******/ 			}
+/******/ 		}
+/******/ 		if (--hotWaitingFiles === 0 && hotChunksLoading === 0) {
+/******/ 			hotUpdateDownloaded();
+/******/ 		}
+/******/ 	}
+/******/
+/******/ 	function hotEnsureUpdateChunk(chunkId) {
+/******/ 		if (!hotAvailableFilesMap[chunkId]) {
+/******/ 			hotWaitingFilesMap[chunkId] = true;
+/******/ 		} else {
+/******/ 			hotRequestedFilesMap[chunkId] = true;
+/******/ 			hotWaitingFiles++;
+/******/ 			hotDownloadUpdateChunk(chunkId);
+/******/ 		}
+/******/ 	}
+/******/
+/******/ 	function hotUpdateDownloaded() {
+/******/ 		hotSetStatus("ready");
+/******/ 		var deferred = hotDeferred;
+/******/ 		hotDeferred = null;
+/******/ 		if (!deferred) return;
+/******/ 		if (hotApplyOnUpdate) {
+/******/ 			// Wrap deferred object in Promise to mark it as a well-handled Promise to
+/******/ 			// avoid triggering uncaught exception warning in Chrome.
+/******/ 			// See https://bugs.chromium.org/p/chromium/issues/detail?id=465666
+/******/ 			Promise.resolve()
+/******/ 				.then(function() {
+/******/ 					return hotApply(hotApplyOnUpdate);
+/******/ 				})
+/******/ 				.then(
+/******/ 					function(result) {
+/******/ 						deferred.resolve(result);
+/******/ 					},
+/******/ 					function(err) {
+/******/ 						deferred.reject(err);
+/******/ 					}
+/******/ 				);
+/******/ 		} else {
+/******/ 			var outdatedModules = [];
+/******/ 			for (var id in hotUpdate) {
+/******/ 				if (Object.prototype.hasOwnProperty.call(hotUpdate, id)) {
+/******/ 					outdatedModules.push(toModuleId(id));
+/******/ 				}
+/******/ 			}
+/******/ 			deferred.resolve(outdatedModules);
+/******/ 		}
+/******/ 	}
+/******/
+/******/ 	function hotApply(options) {
+/******/ 		if (hotStatus !== "ready")
+/******/ 			throw new Error("apply() is only allowed in ready status");
+/******/ 		options = options || {};
+/******/
+/******/ 		var cb;
+/******/ 		var i;
+/******/ 		var j;
+/******/ 		var module;
+/******/ 		var moduleId;
+/******/
+/******/ 		function getAffectedStuff(updateModuleId) {
+/******/ 			var outdatedModules = [updateModuleId];
+/******/ 			var outdatedDependencies = {};
+/******/
+/******/ 			var queue = outdatedModules.slice().map(function(id) {
+/******/ 				return {
+/******/ 					chain: [id],
+/******/ 					id: id
+/******/ 				};
+/******/ 			});
+/******/ 			while (queue.length > 0) {
+/******/ 				var queueItem = queue.pop();
+/******/ 				var moduleId = queueItem.id;
+/******/ 				var chain = queueItem.chain;
+/******/ 				module = installedModules[moduleId];
+/******/ 				if (!module || module.hot._selfAccepted) continue;
+/******/ 				if (module.hot._selfDeclined) {
+/******/ 					return {
+/******/ 						type: "self-declined",
+/******/ 						chain: chain,
+/******/ 						moduleId: moduleId
+/******/ 					};
+/******/ 				}
+/******/ 				if (module.hot._main) {
+/******/ 					return {
+/******/ 						type: "unaccepted",
+/******/ 						chain: chain,
+/******/ 						moduleId: moduleId
+/******/ 					};
+/******/ 				}
+/******/ 				for (var i = 0; i < module.parents.length; i++) {
+/******/ 					var parentId = module.parents[i];
+/******/ 					var parent = installedModules[parentId];
+/******/ 					if (!parent) continue;
+/******/ 					if (parent.hot._declinedDependencies[moduleId]) {
+/******/ 						return {
+/******/ 							type: "declined",
+/******/ 							chain: chain.concat([parentId]),
+/******/ 							moduleId: moduleId,
+/******/ 							parentId: parentId
+/******/ 						};
+/******/ 					}
+/******/ 					if (outdatedModules.indexOf(parentId) !== -1) continue;
+/******/ 					if (parent.hot._acceptedDependencies[moduleId]) {
+/******/ 						if (!outdatedDependencies[parentId])
+/******/ 							outdatedDependencies[parentId] = [];
+/******/ 						addAllToSet(outdatedDependencies[parentId], [moduleId]);
+/******/ 						continue;
+/******/ 					}
+/******/ 					delete outdatedDependencies[parentId];
+/******/ 					outdatedModules.push(parentId);
+/******/ 					queue.push({
+/******/ 						chain: chain.concat([parentId]),
+/******/ 						id: parentId
+/******/ 					});
+/******/ 				}
+/******/ 			}
+/******/
+/******/ 			return {
+/******/ 				type: "accepted",
+/******/ 				moduleId: updateModuleId,
+/******/ 				outdatedModules: outdatedModules,
+/******/ 				outdatedDependencies: outdatedDependencies
+/******/ 			};
+/******/ 		}
+/******/
+/******/ 		function addAllToSet(a, b) {
+/******/ 			for (var i = 0; i < b.length; i++) {
+/******/ 				var item = b[i];
+/******/ 				if (a.indexOf(item) === -1) a.push(item);
+/******/ 			}
+/******/ 		}
+/******/
+/******/ 		// at begin all updates modules are outdated
+/******/ 		// the "outdated" status can propagate to parents if they don't accept the children
+/******/ 		var outdatedDependencies = {};
+/******/ 		var outdatedModules = [];
+/******/ 		var appliedUpdate = {};
+/******/
+/******/ 		var warnUnexpectedRequire = function warnUnexpectedRequire() {
+/******/ 			console.warn(
+/******/ 				"[HMR] unexpected require(" + result.moduleId + ") to disposed module"
+/******/ 			);
+/******/ 		};
+/******/
+/******/ 		for (var id in hotUpdate) {
+/******/ 			if (Object.prototype.hasOwnProperty.call(hotUpdate, id)) {
+/******/ 				moduleId = toModuleId(id);
+/******/ 				/** @type {TODO} */
+/******/ 				var result;
+/******/ 				if (hotUpdate[id]) {
+/******/ 					result = getAffectedStuff(moduleId);
+/******/ 				} else {
+/******/ 					result = {
+/******/ 						type: "disposed",
+/******/ 						moduleId: id
+/******/ 					};
+/******/ 				}
+/******/ 				/** @type {Error|false} */
+/******/ 				var abortError = false;
+/******/ 				var doApply = false;
+/******/ 				var doDispose = false;
+/******/ 				var chainInfo = "";
+/******/ 				if (result.chain) {
+/******/ 					chainInfo = "\nUpdate propagation: " + result.chain.join(" -> ");
+/******/ 				}
+/******/ 				switch (result.type) {
+/******/ 					case "self-declined":
+/******/ 						if (options.onDeclined) options.onDeclined(result);
+/******/ 						if (!options.ignoreDeclined)
+/******/ 							abortError = new Error(
+/******/ 								"Aborted because of self decline: " +
+/******/ 									result.moduleId +
+/******/ 									chainInfo
+/******/ 							);
+/******/ 						break;
+/******/ 					case "declined":
+/******/ 						if (options.onDeclined) options.onDeclined(result);
+/******/ 						if (!options.ignoreDeclined)
+/******/ 							abortError = new Error(
+/******/ 								"Aborted because of declined dependency: " +
+/******/ 									result.moduleId +
+/******/ 									" in " +
+/******/ 									result.parentId +
+/******/ 									chainInfo
+/******/ 							);
+/******/ 						break;
+/******/ 					case "unaccepted":
+/******/ 						if (options.onUnaccepted) options.onUnaccepted(result);
+/******/ 						if (!options.ignoreUnaccepted)
+/******/ 							abortError = new Error(
+/******/ 								"Aborted because " + moduleId + " is not accepted" + chainInfo
+/******/ 							);
+/******/ 						break;
+/******/ 					case "accepted":
+/******/ 						if (options.onAccepted) options.onAccepted(result);
+/******/ 						doApply = true;
+/******/ 						break;
+/******/ 					case "disposed":
+/******/ 						if (options.onDisposed) options.onDisposed(result);
+/******/ 						doDispose = true;
+/******/ 						break;
+/******/ 					default:
+/******/ 						throw new Error("Unexception type " + result.type);
+/******/ 				}
+/******/ 				if (abortError) {
+/******/ 					hotSetStatus("abort");
+/******/ 					return Promise.reject(abortError);
+/******/ 				}
+/******/ 				if (doApply) {
+/******/ 					appliedUpdate[moduleId] = hotUpdate[moduleId];
+/******/ 					addAllToSet(outdatedModules, result.outdatedModules);
+/******/ 					for (moduleId in result.outdatedDependencies) {
+/******/ 						if (
+/******/ 							Object.prototype.hasOwnProperty.call(
+/******/ 								result.outdatedDependencies,
+/******/ 								moduleId
+/******/ 							)
+/******/ 						) {
+/******/ 							if (!outdatedDependencies[moduleId])
+/******/ 								outdatedDependencies[moduleId] = [];
+/******/ 							addAllToSet(
+/******/ 								outdatedDependencies[moduleId],
+/******/ 								result.outdatedDependencies[moduleId]
+/******/ 							);
+/******/ 						}
+/******/ 					}
+/******/ 				}
+/******/ 				if (doDispose) {
+/******/ 					addAllToSet(outdatedModules, [result.moduleId]);
+/******/ 					appliedUpdate[moduleId] = warnUnexpectedRequire;
+/******/ 				}
+/******/ 			}
+/******/ 		}
+/******/
+/******/ 		// Store self accepted outdated modules to require them later by the module system
+/******/ 		var outdatedSelfAcceptedModules = [];
+/******/ 		for (i = 0; i < outdatedModules.length; i++) {
+/******/ 			moduleId = outdatedModules[i];
+/******/ 			if (
+/******/ 				installedModules[moduleId] &&
+/******/ 				installedModules[moduleId].hot._selfAccepted
+/******/ 			)
+/******/ 				outdatedSelfAcceptedModules.push({
+/******/ 					module: moduleId,
+/******/ 					errorHandler: installedModules[moduleId].hot._selfAccepted
+/******/ 				});
+/******/ 		}
+/******/
+/******/ 		// Now in "dispose" phase
+/******/ 		hotSetStatus("dispose");
+/******/ 		Object.keys(hotAvailableFilesMap).forEach(function(chunkId) {
+/******/ 			if (hotAvailableFilesMap[chunkId] === false) {
+/******/ 				hotDisposeChunk(chunkId);
+/******/ 			}
+/******/ 		});
+/******/
+/******/ 		var idx;
+/******/ 		var queue = outdatedModules.slice();
+/******/ 		while (queue.length > 0) {
+/******/ 			moduleId = queue.pop();
+/******/ 			module = installedModules[moduleId];
+/******/ 			if (!module) continue;
+/******/
+/******/ 			var data = {};
+/******/
+/******/ 			// Call dispose handlers
+/******/ 			var disposeHandlers = module.hot._disposeHandlers;
+/******/ 			for (j = 0; j < disposeHandlers.length; j++) {
+/******/ 				cb = disposeHandlers[j];
+/******/ 				cb(data);
+/******/ 			}
+/******/ 			hotCurrentModuleData[moduleId] = data;
+/******/
+/******/ 			// disable module (this disables requires from this module)
+/******/ 			module.hot.active = false;
+/******/
+/******/ 			// remove module from cache
+/******/ 			delete installedModules[moduleId];
+/******/
+/******/ 			// when disposing there is no need to call dispose handler
+/******/ 			delete outdatedDependencies[moduleId];
+/******/
+/******/ 			// remove "parents" references from all children
+/******/ 			for (j = 0; j < module.children.length; j++) {
+/******/ 				var child = installedModules[module.children[j]];
+/******/ 				if (!child) continue;
+/******/ 				idx = child.parents.indexOf(moduleId);
+/******/ 				if (idx >= 0) {
+/******/ 					child.parents.splice(idx, 1);
+/******/ 				}
+/******/ 			}
+/******/ 		}
+/******/
+/******/ 		// remove outdated dependency from module children
+/******/ 		var dependency;
+/******/ 		var moduleOutdatedDependencies;
+/******/ 		for (moduleId in outdatedDependencies) {
+/******/ 			if (
+/******/ 				Object.prototype.hasOwnProperty.call(outdatedDependencies, moduleId)
+/******/ 			) {
+/******/ 				module = installedModules[moduleId];
+/******/ 				if (module) {
+/******/ 					moduleOutdatedDependencies = outdatedDependencies[moduleId];
+/******/ 					for (j = 0; j < moduleOutdatedDependencies.length; j++) {
+/******/ 						dependency = moduleOutdatedDependencies[j];
+/******/ 						idx = module.children.indexOf(dependency);
+/******/ 						if (idx >= 0) module.children.splice(idx, 1);
+/******/ 					}
+/******/ 				}
+/******/ 			}
+/******/ 		}
+/******/
+/******/ 		// Not in "apply" phase
+/******/ 		hotSetStatus("apply");
+/******/
+/******/ 		hotCurrentHash = hotUpdateNewHash;
+/******/
+/******/ 		// insert new code
+/******/ 		for (moduleId in appliedUpdate) {
+/******/ 			if (Object.prototype.hasOwnProperty.call(appliedUpdate, moduleId)) {
+/******/ 				modules[moduleId] = appliedUpdate[moduleId];
+/******/ 			}
+/******/ 		}
+/******/
+/******/ 		// call accept handlers
+/******/ 		var error = null;
+/******/ 		for (moduleId in outdatedDependencies) {
+/******/ 			if (
+/******/ 				Object.prototype.hasOwnProperty.call(outdatedDependencies, moduleId)
+/******/ 			) {
+/******/ 				module = installedModules[moduleId];
+/******/ 				if (module) {
+/******/ 					moduleOutdatedDependencies = outdatedDependencies[moduleId];
+/******/ 					var callbacks = [];
+/******/ 					for (i = 0; i < moduleOutdatedDependencies.length; i++) {
+/******/ 						dependency = moduleOutdatedDependencies[i];
+/******/ 						cb = module.hot._acceptedDependencies[dependency];
+/******/ 						if (cb) {
+/******/ 							if (callbacks.indexOf(cb) !== -1) continue;
+/******/ 							callbacks.push(cb);
+/******/ 						}
+/******/ 					}
+/******/ 					for (i = 0; i < callbacks.length; i++) {
+/******/ 						cb = callbacks[i];
+/******/ 						try {
+/******/ 							cb(moduleOutdatedDependencies);
+/******/ 						} catch (err) {
+/******/ 							if (options.onErrored) {
+/******/ 								options.onErrored({
+/******/ 									type: "accept-errored",
+/******/ 									moduleId: moduleId,
+/******/ 									dependencyId: moduleOutdatedDependencies[i],
+/******/ 									error: err
+/******/ 								});
+/******/ 							}
+/******/ 							if (!options.ignoreErrored) {
+/******/ 								if (!error) error = err;
+/******/ 							}
+/******/ 						}
+/******/ 					}
+/******/ 				}
+/******/ 			}
+/******/ 		}
+/******/
+/******/ 		// Load self accepted modules
+/******/ 		for (i = 0; i < outdatedSelfAcceptedModules.length; i++) {
+/******/ 			var item = outdatedSelfAcceptedModules[i];
+/******/ 			moduleId = item.module;
+/******/ 			hotCurrentParents = [moduleId];
+/******/ 			try {
+/******/ 				__webpack_require__(moduleId);
+/******/ 			} catch (err) {
+/******/ 				if (typeof item.errorHandler === "function") {
+/******/ 					try {
+/******/ 						item.errorHandler(err);
+/******/ 					} catch (err2) {
+/******/ 						if (options.onErrored) {
+/******/ 							options.onErrored({
+/******/ 								type: "self-accept-error-handler-errored",
+/******/ 								moduleId: moduleId,
+/******/ 								error: err2,
+/******/ 								originalError: err
+/******/ 							});
+/******/ 						}
+/******/ 						if (!options.ignoreErrored) {
+/******/ 							if (!error) error = err2;
+/******/ 						}
+/******/ 						if (!error) error = err;
+/******/ 					}
+/******/ 				} else {
+/******/ 					if (options.onErrored) {
+/******/ 						options.onErrored({
+/******/ 							type: "self-accept-errored",
+/******/ 							moduleId: moduleId,
+/******/ 							error: err
+/******/ 						});
+/******/ 					}
+/******/ 					if (!options.ignoreErrored) {
+/******/ 						if (!error) error = err;
+/******/ 					}
+/******/ 				}
+/******/ 			}
+/******/ 		}
+/******/
+/******/ 		// handle errors in accept handlers and self accepted module load
+/******/ 		if (error) {
+/******/ 			hotSetStatus("fail");
+/******/ 			return Promise.reject(error);
+/******/ 		}
+/******/
+/******/ 		hotSetStatus("idle");
+/******/ 		return new Promise(function(resolve) {
+/******/ 			resolve(outdatedModules);
+/******/ 		});
+/******/ 	}
+/******/
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
 /******/
@@ -13,11 +714,14 @@
 /******/ 		var module = installedModules[moduleId] = {
 /******/ 			i: moduleId,
 /******/ 			l: false,
-/******/ 			exports: {}
+/******/ 			exports: {},
+/******/ 			hot: hotCreateModule(moduleId),
+/******/ 			parents: (hotCurrentParentsTemp = hotCurrentParents, hotCurrentParents = [], hotCurrentParentsTemp),
+/******/ 			children: []
 /******/ 		};
 /******/
 /******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 		modules[moduleId].call(module.exports, module, module.exports, hotCreateRequire(moduleId));
 /******/
 /******/ 		// Flag the module as loaded
 /******/ 		module.l = true;
@@ -79,12 +783,26 @@
 /******/ 	// __webpack_public_path__
 /******/ 	__webpack_require__.p = "dist/";
 /******/
+/******/ 	// __webpack_hash__
+/******/ 	__webpack_require__.h = function() { return hotCurrentHash; };
+/******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./src/main.js");
+/******/ 	return hotCreateRequire("./src/main.js")(__webpack_require__.s = "./src/main.js");
 /******/ })
 /************************************************************************/
 /******/ ({
+
+/***/ "./_data/characters.json":
+/*!*******************************!*\
+  !*** ./_data/characters.json ***!
+  \*******************************/
+/*! exports provided: name, characterList, default */
+/***/ (function(module) {
+
+eval("module.exports = {\"name\":\"Character List\",\"characterList\":[{\"id\":1,\"name\":\"Iron Man\",\"alias\":\"Tony Stark\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"iron-man-1-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"iron-man-1-cb.jpg\"}}},{\"id\":2,\"name\":\"Thor\",\"alias\":\"Thor Odinson\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"thor-1-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"thor-1-cb.jpg\"}}},{\"id\":3,\"name\":\"Captain America\",\"alias\":\"Steve Rodgers\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"captain-america-1-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"captain-america-1-cb.jpg\"}}},{\"id\":4,\"name\":\"Hulk\",\"alias\":\"Bruce Banner\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"hulk-1-ca.png\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"hulk-1-cb.jpg\"}}},{\"id\":5,\"name\":\"Hawkeye\",\"alias\":\"Clint Barton\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"hawkeye-1-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"hawkeye-1-cb.jpg\"}}},{\"id\":6,\"name\":\"Black Widow\",\"alias\":\"Natalia Romanoff\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"black-widow-1-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"black-widow-1-cb.jpg\"}}},{\"id\":7,\"name\":\"Loki\",\"alias\":\"Loki Odinson\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"loki-1-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"loki-1-cb.jpg\"}}},{\"id\":8,\"name\":\"Star-Lord\",\"alias\":\"Peter Quill\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"star-lord-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"star-lord-cb.jpg\"}}},{\"id\":9,\"name\":\"Spider-Man\",\"alias\":\"Peter Parker\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"spider-man-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"spider-man-cb.jpg\"}}},{\"id\":10,\"name\":\"Ant-Man\",\"alias\":\"Scott Lang\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"ant-man-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"ant-man-cb.jpg\"}}},{\"id\":11,\"name\":\"Vision\",\"alias\":\"\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"vision-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"vision-cb.jpg\"}}},{\"id\":12,\"name\":\"Scarlet Witch\",\"alias\":\"Wanda Maxinoff\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"scarlet-witch-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"scarlet-witch-cb.jpg\"}}},{\"id\":13,\"name\":\"Black Panther\",\"alias\":\"T'Challa\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"black-panther-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"black-panther-cb.png\"}}},{\"id\":14,\"name\":\"Captain Marvel\",\"alias\":\"Carol Danvers\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"cpt-marvel-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"cpt-marvel-cb.jpg\"}}},{\"id\":15,\"name\":\"Thanos\",\"alias\":\"\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"thanos-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"thanos-cb.jpg\"}}}]};\n\n//# sourceURL=webpack:///./_data/characters.json?");
+
+/***/ }),
 
 /***/ "./node_modules/babel-loader/lib/index.js!./node_modules/vue-loader/lib/index.js?!./src/App.vue?vue&type=script&lang=js&":
 /*!********************************************************************************************************************************!*\
@@ -94,7 +812,19 @@
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _components_CountdownTimer_vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./components/CountdownTimer.vue */ \"./src/components/CountdownTimer.vue\");\n/* harmony import */ var _components_NavigationBar_vue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./components/NavigationBar.vue */ \"./src/components/NavigationBar.vue\");\n/* harmony import */ var _components_TrailerModal_vue__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./components/TrailerModal.vue */ \"./src/components/TrailerModal.vue\");\n/* harmony import */ var _components_Timeline_vue__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./components/Timeline.vue */ \"./src/components/Timeline.vue\");\n/* harmony import */ var _data_movies_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./data/movies.js */ \"./src/data/movies.js\");\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n\n\n\n\n\n/* harmony default export */ __webpack_exports__[\"default\"] = ({\n  name: 'app',\n  data: function data() {\n    return {\n      MovieList: _data_movies_js__WEBPACK_IMPORTED_MODULE_4__[\"default\"],\n      selectedMovie: this.countDownFilm,\n      trailerIsPlaying: false,\n      featuredFilm: _data_movies_js__WEBPACK_IMPORTED_MODULE_4__[\"default\"].movieList.find(function (m, i) {\n        return m.id === _data_movies_js__WEBPACK_IMPORTED_MODULE_4__[\"default\"].featuredFilm.id;\n      }),\n      subFilm: _data_movies_js__WEBPACK_IMPORTED_MODULE_4__[\"default\"].movieList.find(function (m, i) {\n        return m.id === _data_movies_js__WEBPACK_IMPORTED_MODULE_4__[\"default\"].otherFeatured.id;\n      })\n    };\n  },\n  methods: {\n    setModalMeta: function setModalMeta(val) {\n      this.selectedMovie = val.selectedMovie;\n      this.trailerIsPlaying = val.trailerIsPlaying;\n    },\n    hidePlayer: function hidePlayer() {\n      if (this.trailerIsPlaying == false) {\n        return;\n      }\n\n      this.trailerIsPlaying = false;\n    }\n  },\n  components: {\n    CountdownTimer: _components_CountdownTimer_vue__WEBPACK_IMPORTED_MODULE_0__[\"default\"],\n    TrailerModal: _components_TrailerModal_vue__WEBPACK_IMPORTED_MODULE_2__[\"default\"],\n    NavigationBar: _components_NavigationBar_vue__WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n    Timeline: _components_Timeline_vue__WEBPACK_IMPORTED_MODULE_3__[\"default\"]\n  }\n});\n\n//# sourceURL=webpack:///./src/App.vue?./node_modules/babel-loader/lib!./node_modules/vue-loader/lib??vue-loader-options");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _components_CountdownTimer_vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./components/CountdownTimer.vue */ \"./src/components/CountdownTimer.vue\");\n/* harmony import */ var _components_NavigationBar_vue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./components/NavigationBar.vue */ \"./src/components/NavigationBar.vue\");\n/* harmony import */ var _components_Timeline_vue__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./components/Timeline.vue */ \"./src/components/Timeline.vue\");\n/* harmony import */ var _data_movies_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./data/movies.js */ \"./src/data/movies.js\");\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n\n\n\n\n/* harmony default export */ __webpack_exports__[\"default\"] = ({\n  name: 'app',\n  data: function data() {\n    return {\n      MovieList: _data_movies_js__WEBPACK_IMPORTED_MODULE_3__[\"default\"],\n      featuredFilm: _data_movies_js__WEBPACK_IMPORTED_MODULE_3__[\"default\"].movieList.find(function (m, i) {\n        return m.id === _data_movies_js__WEBPACK_IMPORTED_MODULE_3__[\"default\"].featuredFilm.id;\n      }),\n      subFilm: _data_movies_js__WEBPACK_IMPORTED_MODULE_3__[\"default\"].movieList.find(function (m, i) {\n        return m.id === _data_movies_js__WEBPACK_IMPORTED_MODULE_3__[\"default\"].otherFeatured.id;\n      })\n    };\n  },\n  methods: {},\n  components: {\n    CountdownTimer: _components_CountdownTimer_vue__WEBPACK_IMPORTED_MODULE_0__[\"default\"],\n    NavigationBar: _components_NavigationBar_vue__WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n    Timeline: _components_Timeline_vue__WEBPACK_IMPORTED_MODULE_2__[\"default\"]\n  }\n});\n\n//# sourceURL=webpack:///./src/App.vue?./node_modules/babel-loader/lib!./node_modules/vue-loader/lib??vue-loader-options");
+
+/***/ }),
+
+/***/ "./node_modules/babel-loader/lib/index.js!./node_modules/vue-loader/lib/index.js?!./src/components/AllCharactersList.vue?vue&type=script&lang=js&":
+/*!*********************************************************************************************************************************************************!*\
+  !*** ./node_modules/babel-loader/lib!./node_modules/vue-loader/lib??vue-loader-options!./src/components/AllCharactersList.vue?vue&type=script&lang=js& ***!
+  \*********************************************************************************************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _lib_helpers_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./../lib/helpers.js */ \"./src/lib/helpers.js\");\n/* harmony import */ var _ComparisonItem__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./ComparisonItem */ \"./src/components/ComparisonItem.vue\");\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\nvar CharacterList = __webpack_require__(/*! ./../../_data/characters.json */ \"./_data/characters.json\");\n\n\n\n/* harmony default export */ __webpack_exports__[\"default\"] = ({\n  name: 'all-characters-list',\n  data: function data() {\n    return {\n      CharacterList: CharacterList.characterList,\n      selectedCharacter: CharacterList.characterList[0]\n    };\n  },\n  methods: {\n    setSelectedCharacter: function setSelectedCharacter(character) {\n      if (this.selectedCharacter !== null && this.selectedCharacter.id === character.id) {\n        this.selectedCharacter = null;\n        return;\n      }\n\n      this.selectedCharacter = character;\n      createNewBox();\n    },\n    getCharacterImagePath: _lib_helpers_js__WEBPACK_IMPORTED_MODULE_0__[\"getImageWithLocalPath\"]\n  },\n  components: {\n    ComparisonItem: _ComparisonItem__WEBPACK_IMPORTED_MODULE_1__[\"default\"]\n  }\n});\n\n//# sourceURL=webpack:///./src/components/AllCharactersList.vue?./node_modules/babel-loader/lib!./node_modules/vue-loader/lib??vue-loader-options");
 
 /***/ }),
 
@@ -106,7 +836,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _com
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _data_characters_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./../data/characters.js */ \"./src/data/characters.js\");\n/* harmony import */ var _ComparisonItem_vue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./ComparisonItem.vue */ \"./src/components/ComparisonItem.vue\");\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n\n\n/* harmony default export */ __webpack_exports__[\"default\"] = ({\n  name: 'comparison',\n  data: function data() {\n    return {\n      characterList: _data_characters_js__WEBPACK_IMPORTED_MODULE_0__[\"default\"].characterList,\n      selectedCharacter: _data_characters_js__WEBPACK_IMPORTED_MODULE_0__[\"default\"].characterList[0],\n      menuIsVisible: false\n    };\n  },\n  methods: {\n    setSelectedCharacter: function setSelectedCharacter(character) {\n      this.selectedCharacter = character;\n    },\n    displayMenu: function displayMenu() {\n      this.menuIsVisible = !this.menuIsVisible;\n    }\n  },\n  components: {\n    ComparisonItem: _ComparisonItem_vue__WEBPACK_IMPORTED_MODULE_1__[\"default\"]\n  }\n});\n\n//# sourceURL=webpack:///./src/components/Comparison.vue?./node_modules/babel-loader/lib!./node_modules/vue-loader/lib??vue-loader-options");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _data_characters_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./../data/characters.js */ \"./src/data/characters.js\");\n/* harmony import */ var _ComparisonItem_vue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./ComparisonItem.vue */ \"./src/components/ComparisonItem.vue\");\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n\n\n/* harmony default export */ __webpack_exports__[\"default\"] = ({\n  name: 'comparison',\n  data: function data() {\n    return {\n      characterList: _data_characters_js__WEBPACK_IMPORTED_MODULE_0__[\"default\"].characterList,\n      selectedCharacter: _data_characters_js__WEBPACK_IMPORTED_MODULE_0__[\"default\"].characterList[0],\n      menuIsVisible: false\n    };\n  },\n  methods: {\n    setSelectedCharacter: function setSelectedCharacter(character) {\n      this.selectedCharacter = character;\n    },\n    displayMenu: function displayMenu() {\n      this.menuIsVisible = !this.menuIsVisible;\n    }\n  },\n  components: {\n    ComparisonItem: _ComparisonItem_vue__WEBPACK_IMPORTED_MODULE_1__[\"default\"]\n  }\n});\n\n//# sourceURL=webpack:///./src/components/Comparison.vue?./node_modules/babel-loader/lib!./node_modules/vue-loader/lib??vue-loader-options");
 
 /***/ }),
 
@@ -118,7 +848,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _dat
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _lib_helpers_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./../lib/helpers.js */ \"./src/lib/helpers.js\");\n/* harmony import */ var _data_movies_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./../data/movies.js */ \"./src/data/movies.js\");\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n\n\n/* harmony default export */ __webpack_exports__[\"default\"] = ({\n  name: 'comparison-item',\n  props: ['item'],\n  data: function data() {\n    return {\n      movieList: []\n    };\n  },\n  computed: {\n    moviesWithCharacter: function moviesWithCharacter() {\n      var temp = [];\n\n      for (var i = 0; i < _data_movies_js__WEBPACK_IMPORTED_MODULE_1__[\"default\"].movieList.length; i++) {\n        for (var j = 0; j < _data_movies_js__WEBPACK_IMPORTED_MODULE_1__[\"default\"].movieList[i].characterID.length; j++) {\n          if (_data_movies_js__WEBPACK_IMPORTED_MODULE_1__[\"default\"].movieList[i].characterID[j] == this.item.id) {\n            temp.push(_data_movies_js__WEBPACK_IMPORTED_MODULE_1__[\"default\"].movieList[i]);\n          }\n        }\n      }\n\n      return temp;\n    }\n  },\n  methods: {\n    getFileName: _lib_helpers_js__WEBPACK_IMPORTED_MODULE_0__[\"getImageWithLocalPath\"]\n  }\n});\n\n//# sourceURL=webpack:///./src/components/ComparisonItem.vue?./node_modules/babel-loader/lib!./node_modules/vue-loader/lib??vue-loader-options");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _lib_helpers_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./../lib/helpers.js */ \"./src/lib/helpers.js\");\n/* harmony import */ var _data_movies_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./../data/movies.js */ \"./src/data/movies.js\");\n/* harmony import */ var _RelatedCharacterList__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./RelatedCharacterList */ \"./src/components/RelatedCharacterList.vue\");\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n\n\n\n/* harmony default export */ __webpack_exports__[\"default\"] = ({\n  name: 'comparison-item',\n  props: ['item', 'handleCharacterClick'],\n  data: function data() {\n    return {\n      movieList: [],\n      selectedImgToDisplay: this.item.comparison.film.imageUrl,\n      viewMode: 'MCU',\n      selectedMovie: null\n    };\n  },\n  watch: {\n    item: function item(newValue, oldValue) {\n      this.selectedImgToDisplay = newValue.comparison.film.imageUrl;\n      if (this.viewMode !== 'MCU') this.viewMode = 'MCU';\n    }\n  },\n  computed: {\n    moviesWithCharacter: function moviesWithCharacter() {\n      var temp = [];\n\n      for (var i = 0; i < _data_movies_js__WEBPACK_IMPORTED_MODULE_1__[\"default\"].movieList.length; i++) {\n        for (var j = 0; j < _data_movies_js__WEBPACK_IMPORTED_MODULE_1__[\"default\"].movieList[i].characterID.length; j++) {\n          if (_data_movies_js__WEBPACK_IMPORTED_MODULE_1__[\"default\"].movieList[i].characterID[j] == this.item.id) {\n            temp.push(_data_movies_js__WEBPACK_IMPORTED_MODULE_1__[\"default\"].movieList[i]);\n          }\n        }\n      }\n\n      return temp;\n    }\n  },\n  methods: {\n    setSelectedMovie: function setSelectedMovie(movie) {\n      this.selectedMovie = movie;\n      Object(_lib_helpers_js__WEBPACK_IMPORTED_MODULE_0__[\"renderTrailer\"])(movie);\n    },\n    toggleViewMode: function toggleViewMode() {\n      if (this.viewMode === 'MCU') {\n        this.viewMode = 'COMIC';\n        this.selectedImgToDisplay = this.item.comparison.comic.imageUrl;\n      } else {\n        this.viewMode = 'MCU';\n        this.selectedImgToDisplay = this.item.comparison.film.imageUrl;\n      }\n    },\n    getFileName: _lib_helpers_js__WEBPACK_IMPORTED_MODULE_0__[\"getImageWithLocalPath\"]\n  },\n  components: {\n    RelatedCharacterList: _RelatedCharacterList__WEBPACK_IMPORTED_MODULE_2__[\"default\"]\n  }\n});\n\n//# sourceURL=webpack:///./src/components/ComparisonItem.vue?./node_modules/babel-loader/lib!./node_modules/vue-loader/lib??vue-loader-options");
 
 /***/ }),
 
@@ -130,7 +860,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _lib
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _TrailerModal_vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./TrailerModal.vue */ \"./src/components/TrailerModal.vue\");\n/* harmony import */ var _NavigationBar_vue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./NavigationBar.vue */ \"./src/components/NavigationBar.vue\");\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n\n\n/* harmony default export */ __webpack_exports__[\"default\"] = ({\n  name: 'countdown-timer',\n  props: ['timerIsLarge', 'endDate', 'film', 'ticketsUrl'],\n  data: function data() {\n    return {\n      currentTime: Math.trunc(new Date().getTime() / 1000),\n      endTime: Math.trunc(Date.parse(this.endDate) / 1000),\n      trailerIsPlaying: false,\n      getCurrentWebpage: window.location,\n      filmWallpaper: \"'/dist/Assets/\" + this.film.wallpaper + \"'\"\n    };\n  },\n  methods: {\n    playTrailer: function playTrailer(film, trailerIsPlaying) {\n      this.$emit('set-modal-meta', {\n        selectedMovie: film,\n        trailerIsPlaying: trailerIsPlaying\n      });\n    },\n    getMessageByTimer: function getMessageByTimer(days, hours, minutes) {\n      var message = days + \" Days, \" + hours + \" Hours, \" + minutes + \" Minutes Until \" + this.film.name + \"! \";\n      return message.replace(' ', '%20').replace(',', '+').replace('!', '%21');\n    },\n    getMessage: function getMessage(msg) {\n      return msg.replace(' ', '%20').replace(',', '+').replace('!', '%21');\n    }\n  },\n  computed: {\n    days: function days() {\n      return Math.trunc((this.endTime - this.currentTime) / 3600 / 24);\n    },\n    hours: function hours() {\n      return Math.trunc((this.endTime - this.currentTime) / 3600) % 24;\n    },\n    minutes: function minutes() {\n      return Math.trunc((this.endTime - this.currentTime) / 60) % 60;\n    },\n    seconds: function seconds() {\n      return (this.endTime - this.currentTime) % 60;\n    }\n  },\n  mounted: function mounted() {\n    var _this = this;\n\n    window.setInterval(function () {\n      _this.currentTime = Math.trunc(new Date().getTime() / 1000);\n    }, 1000);\n  },\n  components: {\n    TrailerModal: _TrailerModal_vue__WEBPACK_IMPORTED_MODULE_0__[\"default\"],\n    NavigationBar: _NavigationBar_vue__WEBPACK_IMPORTED_MODULE_1__[\"default\"]\n  }\n});\n\n//# sourceURL=webpack:///./src/components/CountdownTimer.vue?./node_modules/babel-loader/lib!./node_modules/vue-loader/lib??vue-loader-options");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _lib_helpers_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./../lib/helpers.js */ \"./src/lib/helpers.js\");\n/* harmony import */ var _NavigationBar_vue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./NavigationBar.vue */ \"./src/components/NavigationBar.vue\");\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n\n\n/* harmony default export */ __webpack_exports__[\"default\"] = ({\n  name: 'countdown-timer',\n  props: ['timerIsLarge', 'endDate', 'film', 'ticketsUrl', 'shadowColor'],\n  data: function data() {\n    return {\n      currentTime: Math.trunc(new Date().getTime() / 1000),\n      endTime: Math.trunc(Date.parse(this.endDate) / 1000),\n      getCurrentWebpage: window.location,\n      filmWallpaper: \"'/dist/Assets/\" + this.film.wallpaper + \"'\"\n    };\n  },\n  methods: {\n    playTrailer: function playTrailer(film) {\n      Object(_lib_helpers_js__WEBPACK_IMPORTED_MODULE_0__[\"renderTrailer\"])(film);\n    },\n    getMessageByTimer: function getMessageByTimer(days, hours, minutes) {\n      var message = days + \" Days, \" + hours + \" Hours, \" + minutes + \" Minutes Until \" + this.film.name + \"! \";\n      return message.replace(' ', '%20').replace(',', '+').replace('!', '%21');\n    },\n    getMessage: function getMessage(msg) {\n      return msg.replace(' ', '%20').replace(',', '+').replace('!', '%21');\n    }\n  },\n  computed: {\n    days: function days() {\n      return Math.trunc((this.endTime - this.currentTime) / 3600 / 24);\n    },\n    hours: function hours() {\n      return Math.trunc((this.endTime - this.currentTime) / 3600) % 24;\n    },\n    minutes: function minutes() {\n      return Math.trunc((this.endTime - this.currentTime) / 60) % 60;\n    },\n    seconds: function seconds() {\n      return (this.endTime - this.currentTime) % 60;\n    }\n  },\n  mounted: function mounted() {\n    var _this = this;\n\n    window.setInterval(function () {\n      _this.currentTime = Math.trunc(new Date().getTime() / 1000);\n    }, 1000);\n  },\n  components: {\n    NavigationBar: _NavigationBar_vue__WEBPACK_IMPORTED_MODULE_1__[\"default\"]\n  }\n});\n\n//# sourceURL=webpack:///./src/components/CountdownTimer.vue?./node_modules/babel-loader/lib!./node_modules/vue-loader/lib??vue-loader-options");
 
 /***/ }),
 
@@ -182,6 +912,18 @@ eval("__webpack_require__.r(__webpack_exports__);\n//\n//\n//\n//\n//\n//\n//\n/
 
 /***/ }),
 
+/***/ "./node_modules/babel-loader/lib/index.js!./node_modules/vue-loader/lib/index.js?!./src/components/RelatedCharacterList.vue?vue&type=script&lang=js&":
+/*!************************************************************************************************************************************************************!*\
+  !*** ./node_modules/babel-loader/lib!./node_modules/vue-loader/lib??vue-loader-options!./src/components/RelatedCharacterList.vue?vue&type=script&lang=js& ***!
+  \************************************************************************************************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _data_movies_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./../data/movies.js */ \"./src/data/movies.js\");\n/* harmony import */ var _lib_helpers_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./../lib/helpers.js */ \"./src/lib/helpers.js\");\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\nvar CharacterList = __webpack_require__(/*! ./../data/characters.json */ \"./src/data/characters.json\");\n\n\n\n/* harmony default export */ __webpack_exports__[\"default\"] = ({\n  name: 'related-character-list',\n  props: ['item', 'handleCharacterClick'],\n  data: function data() {\n    return {\n      characterList: CharacterList.characterList,\n      movieList: _data_movies_js__WEBPACK_IMPORTED_MODULE_0__[\"default\"].movieList\n    };\n  },\n  methods: {\n    getImageWithLocalPath: _lib_helpers_js__WEBPACK_IMPORTED_MODULE_1__[\"getImageWithLocalPath\"]\n  },\n  computed: {\n    getRelatedFilmCharacters: function getRelatedFilmCharacters() {\n      var _this = this;\n\n      var temp = [];\n\n      for (var i = 0; i < _data_movies_js__WEBPACK_IMPORTED_MODULE_0__[\"default\"].movieList.length; i++) {\n        for (var j = 0; j < _data_movies_js__WEBPACK_IMPORTED_MODULE_0__[\"default\"].movieList[i].characterID.length; j++) {\n          if (_data_movies_js__WEBPACK_IMPORTED_MODULE_0__[\"default\"].movieList[i].characterID[j] == this.item.id) {\n            temp.push(_data_movies_js__WEBPACK_IMPORTED_MODULE_0__[\"default\"].movieList[i].characterID.filter(function (c, index) {\n              return c != _this.item.id;\n            }));\n          }\n        }\n      }\n\n      return temp;\n    },\n    getRelatedCharacters: function getRelatedCharacters() {\n      var temp = [];\n      var cList = this.getRelatedFilmCharacters;\n\n      for (var i = 0; i < CharacterList.characterList.length; i++) {\n        for (var j = 0; j < cList.length; j++) {\n          for (var k = 0; k < cList[j].length; k++) {\n            if (CharacterList.characterList[i].id == cList[j][k]) {\n              temp.push(CharacterList.characterList[i]);\n            }\n          }\n        }\n      }\n\n      return Array.from(new Set(temp));\n    }\n  }\n});\n\n//# sourceURL=webpack:///./src/components/RelatedCharacterList.vue?./node_modules/babel-loader/lib!./node_modules/vue-loader/lib??vue-loader-options");
+
+/***/ }),
+
 /***/ "./node_modules/babel-loader/lib/index.js!./node_modules/vue-loader/lib/index.js?!./src/components/SearchBar.vue?vue&type=script&lang=js&":
 /*!*************************************************************************************************************************************************!*\
   !*** ./node_modules/babel-loader/lib!./node_modules/vue-loader/lib??vue-loader-options!./src/components/SearchBar.vue?vue&type=script&lang=js& ***!
@@ -202,7 +944,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n//\n//\n//\n//\n//\n//\n//\n/
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _data_movies_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./../data/movies.js */ \"./src/data/movies.js\");\n/* harmony import */ var _lib_helpers_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./../lib/helpers.js */ \"./src/lib/helpers.js\");\n/* harmony import */ var _TimelineItem_vue__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./TimelineItem.vue */ \"./src/components/TimelineItem.vue\");\n/* harmony import */ var _SearchBar_vue__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./SearchBar.vue */ \"./src/components/SearchBar.vue\");\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n\n\n\n\n/* harmony default export */ __webpack_exports__[\"default\"] = ({\n  name: 'timeline-item',\n  props: [],\n  data: function data() {\n    return {\n      movieList: _data_movies_js__WEBPACK_IMPORTED_MODULE_0__[\"default\"].movieList,\n      selectedMovie: _data_movies_js__WEBPACK_IMPORTED_MODULE_0__[\"default\"].movieList[_data_movies_js__WEBPACK_IMPORTED_MODULE_0__[\"default\"].movieList.length - 1],\n      trailerIsPlaying: false,\n      selectedView: 'grid-view'\n    };\n  },\n  methods: {\n    setSelectedMovie: function setSelectedMovie(movie) {\n      this.selectedMovie = movie;\n      this.trailerIsPlaying = true;\n      this.$emit('set-modal-meta', {\n        selectedMovie: movie,\n        trailerIsPlaying: true\n      });\n    },\n    toggleView: function toggleView() {\n      if (this.selectedView == 'grid-view') {\n        this.selectedView = 'timeline-view';\n        return;\n      }\n\n      this.selectedView = 'grid-view';\n    },\n    getPosterUrl: _lib_helpers_js__WEBPACK_IMPORTED_MODULE_1__[\"getImageWithLocalPath\"]\n  },\n  components: {\n    TimelineItem: _TimelineItem_vue__WEBPACK_IMPORTED_MODULE_2__[\"default\"]\n  }\n});\n\n//# sourceURL=webpack:///./src/components/Timeline.vue?./node_modules/babel-loader/lib!./node_modules/vue-loader/lib??vue-loader-options");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _data_movies_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./../data/movies.js */ \"./src/data/movies.js\");\n/* harmony import */ var _lib_helpers_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./../lib/helpers.js */ \"./src/lib/helpers.js\");\n/* harmony import */ var _TimelineItem_vue__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./TimelineItem.vue */ \"./src/components/TimelineItem.vue\");\n/* harmony import */ var _SearchBar_vue__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./SearchBar.vue */ \"./src/components/SearchBar.vue\");\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n\n\n\n\n/* harmony default export */ __webpack_exports__[\"default\"] = ({\n  name: 'timeline-item',\n  props: [],\n  data: function data() {\n    return {\n      movieList: _data_movies_js__WEBPACK_IMPORTED_MODULE_0__[\"default\"].movieList,\n      selectedMovie: _data_movies_js__WEBPACK_IMPORTED_MODULE_0__[\"default\"].movieList[_data_movies_js__WEBPACK_IMPORTED_MODULE_0__[\"default\"].movieList.length - 1],\n      selectedView: 'grid-view'\n    };\n  },\n  methods: {\n    setSelectedMovie: function setSelectedMovie(movie) {\n      Object(_lib_helpers_js__WEBPACK_IMPORTED_MODULE_1__[\"renderTrailer\"])(movie);\n    },\n    toggleView: function toggleView() {\n      if (this.selectedView == 'grid-view') {\n        this.selectedView = 'timeline-view';\n        return;\n      }\n\n      this.selectedView = 'grid-view';\n    },\n    getPosterUrl: _lib_helpers_js__WEBPACK_IMPORTED_MODULE_1__[\"getImageWithLocalPath\"]\n  },\n  components: {\n    TimelineItem: _TimelineItem_vue__WEBPACK_IMPORTED_MODULE_2__[\"default\"]\n  }\n});\n\n//# sourceURL=webpack:///./src/components/Timeline.vue?./node_modules/babel-loader/lib!./node_modules/vue-loader/lib??vue-loader-options");
 
 /***/ }),
 
@@ -226,7 +968,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n//\n//\n//\n//\n//\n//\n//\n/
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _lib_helpers_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./../lib/helpers.js */ \"./src/lib/helpers.js\");\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n\n/* harmony default export */ __webpack_exports__[\"default\"] = ({\n  name: 'trailer-modal',\n\n  /* \n  *\n  * Two properties passed down from parent.\n  *\n  * `selectedMovie` Object the movie who's trailer is being played\n  *\n  * `startPlaying` Boolean determines if player modal should be opened\n  *\n  */\n  props: ['selectedMovie', 'startPlaying'],\n  data: function data() {\n    return {};\n  },\n  methods: {\n    hidePlayer: function hidePlayer() {\n      if (this.startPlaying) {\n        this.$emit('hide-player');\n        return;\n      } else {\n        return;\n      }\n    },\n\n    /*\n    *\n    * Removes the video id from the video, strippping away any\n    * extra parameters if present.\n    *\n    * @return String embed url of the selected video for use\n    * in the iframe\n    *\n    */\n    getTrailerEmbedUrl: function getTrailerEmbedUrl() {\n      var fullUrl = this.selectedMovie.trailerUrl.indexOf('v=');\n\n      if (fullUrl != -1) {\n        var trailerStartIndex = fullUrl + 2;\n      } else {\n        /*\n        *\n        * For use with trailers in shortened format like so:\n        * \thttps://youtu.be/DIfgxIv5xmk\n        */\n        var shortUrl = this.selectedMovie.trailerUrl.indexOf('.be/');\n\n        if (shortUrl != -1) {\n          var trailerStartIndex = shortUrl + 3;\n        }\n      }\n\n      var trailerEndIndex = this.selectedMovie.trailerUrl.indexOf('&');\n\n      if (trailerEndIndex == -1) {\n        trailerEndIndex = this.selectedMovie.trailerUrl.length;\n      }\n\n      return 'https://youtube.com/embed/' + this.selectedMovie.trailerUrl.slice(trailerStartIndex, trailerEndIndex);\n    },\n    getImageWithLocalPath: _lib_helpers_js__WEBPACK_IMPORTED_MODULE_0__[\"getImageWithLocalPath\"]\n  }\n});\n\n//# sourceURL=webpack:///./src/components/TrailerModal.vue?./node_modules/babel-loader/lib!./node_modules/vue-loader/lib??vue-loader-options");
+eval("__webpack_require__.r(__webpack_exports__);\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n//\n/* harmony default export */ __webpack_exports__[\"default\"] = ({\n  name: 'trailer-modal',\n\n  /*\n  *\n  * `selectedMovie` Object - the movie whose trailer is being played\n  *\n  */\n  props: ['selectedMovie'],\n  data: function data() {\n    return {\n      videoIsPlaying: true\n    };\n  },\n  watch: {\n    selectedMovie: function selectedMovie(newVal, oldVal) {\n      this.videoIsPlaying = true;\n    }\n  },\n  methods: {\n    hidePlayer: function hidePlayer() {\n      this.videoIsPlaying = !this.videoIsPlaying;\n    },\n\n    /*\n    *\n    * Removes the video id from the video, strippping away any\n    * extra parameters if present.\n    *\n    * @return String embed url of the selected video for use\n    * in the iframe\n    *\n    */\n    getTrailerEmbedUrl: function getTrailerEmbedUrl() {\n      var fullUrl = this.selectedMovie.trailerUrl.indexOf('v=');\n\n      if (fullUrl != -1) {\n        var trailerStartIndex = fullUrl + 2;\n      } else {\n        /*\n        *\n        * For use with trailers in shortened format like so:\n        * \thttps://youtu.be/DIfgxIv5xmk\n        */\n        var shortUrl = this.selectedMovie.trailerUrl.indexOf('.be/');\n\n        if (shortUrl != -1) {\n          var trailerStartIndex = shortUrl + 3;\n        }\n      }\n\n      var trailerEndIndex = this.selectedMovie.trailerUrl.indexOf('&');\n\n      if (trailerEndIndex == -1) {\n        trailerEndIndex = this.selectedMovie.trailerUrl.length;\n      }\n\n      return 'https://youtube.com/embed/' + this.selectedMovie.trailerUrl.slice(trailerStartIndex, trailerEndIndex);\n    },\n    getFileName: function getFileName(image_filename, sub_folder) {\n      if (typeof sub_folder === \"undefined\") {\n        return __webpack_require__(\"./src/assets/images sync recursive ^\\\\.\\\\/.*$\")(\"./\" + image_filename);\n      }\n\n      return __webpack_require__(\"./src/assets/images sync recursive ^\\\\.\\\\/.*$\")(\"./\" + sub_folder + image_filename);\n    }\n  }\n});\n\n//# sourceURL=webpack:///./src/components/TrailerModal.vue?./node_modules/babel-loader/lib!./node_modules/vue-loader/lib??vue-loader-options");
 
 /***/ }),
 
@@ -263,6 +1005,17 @@ eval("/* WEBPACK VAR INJECTION */(function(global) {var scope = (typeof global !
 
 /***/ }),
 
+/***/ "./node_modules/vue-hot-reload-api/dist/index.js":
+/*!*******************************************************!*\
+  !*** ./node_modules/vue-hot-reload-api/dist/index.js ***!
+  \*******************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+eval("var Vue // late bind\nvar version\nvar map = Object.create(null)\nif (typeof window !== 'undefined') {\n  window.__VUE_HOT_MAP__ = map\n}\nvar installed = false\nvar isBrowserify = false\nvar initHookName = 'beforeCreate'\n\nexports.install = function (vue, browserify) {\n  if (installed) { return }\n  installed = true\n\n  Vue = vue.__esModule ? vue.default : vue\n  version = Vue.version.split('.').map(Number)\n  isBrowserify = browserify\n\n  // compat with < 2.0.0-alpha.7\n  if (Vue.config._lifecycleHooks.indexOf('init') > -1) {\n    initHookName = 'init'\n  }\n\n  exports.compatible = version[0] >= 2\n  if (!exports.compatible) {\n    console.warn(\n      '[HMR] You are using a version of vue-hot-reload-api that is ' +\n        'only compatible with Vue.js core ^2.0.0.'\n    )\n    return\n  }\n}\n\n/**\n * Create a record for a hot module, which keeps track of its constructor\n * and instances\n *\n * @param {String} id\n * @param {Object} options\n */\n\nexports.createRecord = function (id, options) {\n  if(map[id]) { return }\n\n  var Ctor = null\n  if (typeof options === 'function') {\n    Ctor = options\n    options = Ctor.options\n  }\n  makeOptionsHot(id, options)\n  map[id] = {\n    Ctor: Ctor,\n    options: options,\n    instances: []\n  }\n}\n\n/**\n * Check if module is recorded\n *\n * @param {String} id\n */\n\nexports.isRecorded = function (id) {\n  return typeof map[id] !== 'undefined'\n}\n\n/**\n * Make a Component options object hot.\n *\n * @param {String} id\n * @param {Object} options\n */\n\nfunction makeOptionsHot(id, options) {\n  if (options.functional) {\n    var render = options.render\n    options.render = function (h, ctx) {\n      var instances = map[id].instances\n      if (ctx && instances.indexOf(ctx.parent) < 0) {\n        instances.push(ctx.parent)\n      }\n      return render(h, ctx)\n    }\n  } else {\n    injectHook(options, initHookName, function() {\n      var record = map[id]\n      if (!record.Ctor) {\n        record.Ctor = this.constructor\n      }\n      record.instances.push(this)\n    })\n    injectHook(options, 'beforeDestroy', function() {\n      var instances = map[id].instances\n      instances.splice(instances.indexOf(this), 1)\n    })\n  }\n}\n\n/**\n * Inject a hook to a hot reloadable component so that\n * we can keep track of it.\n *\n * @param {Object} options\n * @param {String} name\n * @param {Function} hook\n */\n\nfunction injectHook(options, name, hook) {\n  var existing = options[name]\n  options[name] = existing\n    ? Array.isArray(existing) ? existing.concat(hook) : [existing, hook]\n    : [hook]\n}\n\nfunction tryWrap(fn) {\n  return function (id, arg) {\n    try {\n      fn(id, arg)\n    } catch (e) {\n      console.error(e)\n      console.warn(\n        'Something went wrong during Vue component hot-reload. Full reload required.'\n      )\n    }\n  }\n}\n\nfunction updateOptions (oldOptions, newOptions) {\n  for (var key in oldOptions) {\n    if (!(key in newOptions)) {\n      delete oldOptions[key]\n    }\n  }\n  for (var key$1 in newOptions) {\n    oldOptions[key$1] = newOptions[key$1]\n  }\n}\n\nexports.rerender = tryWrap(function (id, options) {\n  var record = map[id]\n  if (!options) {\n    record.instances.slice().forEach(function (instance) {\n      instance.$forceUpdate()\n    })\n    return\n  }\n  if (typeof options === 'function') {\n    options = options.options\n  }\n  if (record.Ctor) {\n    record.Ctor.options.render = options.render\n    record.Ctor.options.staticRenderFns = options.staticRenderFns\n    record.instances.slice().forEach(function (instance) {\n      instance.$options.render = options.render\n      instance.$options.staticRenderFns = options.staticRenderFns\n      // reset static trees\n      // pre 2.5, all static trees are cached together on the instance\n      if (instance._staticTrees) {\n        instance._staticTrees = []\n      }\n      // 2.5.0\n      if (Array.isArray(record.Ctor.options.cached)) {\n        record.Ctor.options.cached = []\n      }\n      // 2.5.3\n      if (Array.isArray(instance.$options.cached)) {\n        instance.$options.cached = []\n      }\n\n      // post 2.5.4: v-once trees are cached on instance._staticTrees.\n      // Pure static trees are cached on the staticRenderFns array\n      // (both already reset above)\n\n      // 2.6: temporarily mark rendered scoped slots as unstable so that\n      // child components can be forced to update\n      var restore = patchScopedSlots(instance)\n      instance.$forceUpdate()\n      instance.$nextTick(restore)\n    })\n  } else {\n    // functional or no instance created yet\n    record.options.render = options.render\n    record.options.staticRenderFns = options.staticRenderFns\n\n    // handle functional component re-render\n    if (record.options.functional) {\n      // rerender with full options\n      if (Object.keys(options).length > 2) {\n        updateOptions(record.options, options)\n      } else {\n        // template-only rerender.\n        // need to inject the style injection code for CSS modules\n        // to work properly.\n        var injectStyles = record.options._injectStyles\n        if (injectStyles) {\n          var render = options.render\n          record.options.render = function (h, ctx) {\n            injectStyles.call(ctx)\n            return render(h, ctx)\n          }\n        }\n      }\n      record.options._Ctor = null\n      // 2.5.3\n      if (Array.isArray(record.options.cached)) {\n        record.options.cached = []\n      }\n      record.instances.slice().forEach(function (instance) {\n        instance.$forceUpdate()\n      })\n    }\n  }\n})\n\nexports.reload = tryWrap(function (id, options) {\n  var record = map[id]\n  if (options) {\n    if (typeof options === 'function') {\n      options = options.options\n    }\n    makeOptionsHot(id, options)\n    if (record.Ctor) {\n      if (version[1] < 2) {\n        // preserve pre 2.2 behavior for global mixin handling\n        record.Ctor.extendOptions = options\n      }\n      var newCtor = record.Ctor.super.extend(options)\n      record.Ctor.options = newCtor.options\n      record.Ctor.cid = newCtor.cid\n      record.Ctor.prototype = newCtor.prototype\n      if (newCtor.release) {\n        // temporary global mixin strategy used in < 2.0.0-alpha.6\n        newCtor.release()\n      }\n    } else {\n      updateOptions(record.options, options)\n    }\n  }\n  record.instances.slice().forEach(function (instance) {\n    if (instance.$vnode && instance.$vnode.context) {\n      instance.$vnode.context.$forceUpdate()\n    } else {\n      console.warn(\n        'Root or manually mounted instance modified. Full reload required.'\n      )\n    }\n  })\n})\n\n// 2.6 optimizes template-compiled scoped slots and skips updates if child\n// only uses scoped slots. We need to patch the scoped slots resolving helper\n// to temporarily mark all scoped slots as unstable in order to force child\n// updates.\nfunction patchScopedSlots (instance) {\n  if (!instance._u) { return }\n  // https://github.com/vuejs/vue/blob/dev/src/core/instance/render-helpers/resolve-scoped-slots.js\n  var original = instance._u\n  instance._u = function (slots) {\n    try {\n      // 2.6.4 ~ 2.6.6\n      return original(slots, true)\n    } catch (e) {\n      // 2.5 / >= 2.6.7\n      return original(slots, null, true)\n    }\n  }\n  return function () {\n    instance._u = original\n  }\n}\n\n\n//# sourceURL=webpack:///./node_modules/vue-hot-reload-api/dist/index.js?");
+
+/***/ }),
+
 /***/ "./node_modules/vue-loader/lib/loaders/templateLoader.js?!./node_modules/vue-loader/lib/index.js?!./src/App.vue?vue&type=template&id=7ba5bd90&":
 /*!**********************************************************************************************************************************************************************************!*\
   !*** ./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options!./src/App.vue?vue&type=template&id=7ba5bd90& ***!
@@ -271,7 +1024,19 @@ eval("/* WEBPACK VAR INJECTION */(function(global) {var scope = (typeof global !
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return render; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"staticRenderFns\", function() { return staticRenderFns; });\nvar render = function() {\n  var _vm = this\n  var _h = _vm.$createElement\n  var _c = _vm._self._c || _h\n  return _c(\n    \"div\",\n    { attrs: { id: \"app\" } },\n    [\n      _c(\"CountdownTimer\", {\n        attrs: {\n          film: _vm.featuredFilm,\n          endDate: _vm.featuredFilm.releaseDate,\n          ticketsUrl: _vm.MovieList.featuredFilm.tickets_url,\n          timerIsLarge: true\n        },\n        on: { \"set-modal-meta\": _vm.setModalMeta },\n        scopedSlots: _vm._u([\n          {\n            key: \"navbar\",\n            fn: function() {\n              return [_c(\"NavigationBar\")]\n            },\n            proxy: true\n          }\n        ])\n      }),\n      _vm._v(\" \"),\n      _c(\n        \"div\",\n        { staticClass: \"small-timer-wrapper\", attrs: { id: \"next-timer\" } },\n        [\n          _c(\"CountdownTimer\", {\n            attrs: {\n              film: _vm.subFilm,\n              endDate: _vm.subFilm.releaseDate,\n              ticketsUrl: _vm.MovieList.otherFeatured.tickets_url,\n              timerIsLarge: false\n            },\n            on: { \"set-modal-meta\": _vm.setModalMeta }\n          })\n        ],\n        1\n      ),\n      _vm._v(\" \"),\n      _c(\"h2\", { staticClass: \"page-name\", attrs: { id: \"timeline-main\" } }, [\n        _vm._v(\"\\n\\t\\tTimeline\\n\\t\")\n      ]),\n      _vm._v(\" \"),\n      _c(\"Timeline\", { on: { \"set-modal-meta\": _vm.setModalMeta } }),\n      _vm._v(\" \"),\n      _c(\"TrailerModal\", {\n        attrs: {\n          selectedMovie: _vm.selectedMovie,\n          startPlaying: _vm.trailerIsPlaying\n        },\n        on: {\n          \"hide-player\": function($event) {\n            return _vm.hidePlayer()\n          }\n        }\n      })\n    ],\n    1\n  )\n}\nvar staticRenderFns = []\nrender._withStripped = true\n\n\n\n//# sourceURL=webpack:///./src/App.vue?./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return render; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"staticRenderFns\", function() { return staticRenderFns; });\nvar render = function() {\n  var _vm = this\n  var _h = _vm.$createElement\n  var _c = _vm._self._c || _h\n  return _c(\n    \"div\",\n    { attrs: { id: \"app\" } },\n    [\n      _c(\"CountdownTimer\", {\n        attrs: {\n          film: _vm.featuredFilm,\n          endDate: _vm.featuredFilm.releaseDate,\n          ticketsUrl: _vm.MovieList.featuredFilm.tickets_url,\n          timerIsLarge: true,\n          shadowColor: _vm.MovieList.featuredFilm.shadow_color\n        },\n        scopedSlots: _vm._u([\n          {\n            key: \"navbar\",\n            fn: function() {\n              return [_c(\"NavigationBar\")]\n            },\n            proxy: true\n          }\n        ])\n      }),\n      _vm._v(\" \"),\n      _c(\n        \"div\",\n        { staticClass: \"small-timer-wrapper\", attrs: { id: \"next-timer\" } },\n        [\n          _c(\"CountdownTimer\", {\n            attrs: {\n              film: _vm.subFilm,\n              endDate: _vm.subFilm.releaseDate,\n              ticketsUrl: _vm.MovieList.otherFeatured.tickets_url,\n              timerIsLarge: false,\n              shadowColor: _vm.MovieList.otherFeatured.shadow_color\n            }\n          })\n        ],\n        1\n      ),\n      _vm._v(\" \"),\n      _c(\"h2\", { staticClass: \"page-name\", attrs: { id: \"timeline-main\" } }, [\n        _vm._v(\"\\n\\t\\tTimeline\\n\\t\")\n      ]),\n      _vm._v(\" \"),\n      _c(\"Timeline\")\n    ],\n    1\n  )\n}\nvar staticRenderFns = []\nrender._withStripped = true\n\n\n\n//# sourceURL=webpack:///./src/App.vue?./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options");
+
+/***/ }),
+
+/***/ "./node_modules/vue-loader/lib/loaders/templateLoader.js?!./node_modules/vue-loader/lib/index.js?!./src/components/AllCharactersList.vue?vue&type=template&id=2f2ab5a9&":
+/*!***********************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options!./src/components/AllCharactersList.vue?vue&type=template&id=2f2ab5a9& ***!
+  \***********************************************************************************************************************************************************************************************************/
+/*! exports provided: render, staticRenderFns */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return render; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"staticRenderFns\", function() { return staticRenderFns; });\nvar render = function() {\n  var _vm = this\n  var _h = _vm.$createElement\n  var _c = _vm._self._c || _h\n  return _c(\n    \"div\",\n    {\n      staticClass: \"all_characters_list page-item\",\n      attrs: { id: \"all-chars\" }\n    },\n    [\n      _c(\n        \"ul\",\n        {\n          staticClass: \"character-list\",\n          style:\n            _vm.selectedCharacter === null ? \"display: block\" : \"display: none\"\n        },\n        _vm._l(_vm.CharacterList, function(character) {\n          return _c(\n            \"li\",\n            {\n              key: character.id,\n              on: {\n                click: function($event) {\n                  return _vm.setSelectedCharacter(character)\n                }\n              }\n            },\n            [\n              _c(\"div\", { staticClass: \"character-inner-wrapper\" }, [\n                _c(\"span\", {\n                  staticClass: \"character-thumb\",\n                  style:\n                    \"background-image: url('\" +\n                    _vm.getCharacterImagePath(\n                      character.comparison.film.imageUrl\n                    ) +\n                    \"');\"\n                }),\n                _vm._v(\" \"),\n                _c(\"div\", { staticClass: \"character-details\" }, [\n                  _c(\"h2\", [\n                    _vm._v(\n                      \"\\n\\t\\t\\t\\t\\t\\t\" + _vm._s(character.name) + \"\\n\\t\\t\\t\\t\\t\"\n                    )\n                  ])\n                ])\n              ])\n            ]\n          )\n        }),\n        0\n      ),\n      _vm._v(\" \"),\n      _vm.selectedCharacter\n        ? _c(\n            \"div\",\n            { staticClass: \"character-item\" },\n            [\n              _c(\n                \"div\",\n                {\n                  staticClass: \"close-btn\",\n                  on: {\n                    click: function($event) {\n                      _vm.selectedCharacter = null\n                    }\n                  }\n                },\n                [_vm._v(\"\\n\\t\\t\\tReturn ×\\n\\t\\t\")]\n              ),\n              _vm._v(\" \"),\n              _c(\"ComparisonItem\", {\n                attrs: {\n                  item: _vm.selectedCharacter,\n                  handleCharacterClick: _vm.setSelectedCharacter\n                }\n              })\n            ],\n            1\n          )\n        : _vm._e()\n    ]\n  )\n}\nvar staticRenderFns = []\nrender._withStripped = true\n\n\n\n//# sourceURL=webpack:///./src/components/AllCharactersList.vue?./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options");
 
 /***/ }),
 
@@ -283,7 +1048,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) *
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return render; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"staticRenderFns\", function() { return staticRenderFns; });\nvar render = function() {\n  var _vm = this\n  var _h = _vm.$createElement\n  var _c = _vm._self._c || _h\n  return _c(\"div\", { attrs: { id: \"comparison-wrapper\" } }, [\n    _c(\n      \"div\",\n      {\n        class: _vm.menuIsVisible\n          ? \"on hamburger-menu has_text\"\n          : \"hamburger-menu has_text\",\n        attrs: { id: \"comparison-menu-toggle\" },\n        on: { click: _vm.displayMenu }\n      },\n      [_vm._v(\"Choose A Hero\")]\n    ),\n    _vm._v(\" \"),\n    _vm.menuIsVisible\n      ? _c(\n          \"ul\",\n          { staticClass: \"toggle-menu\", attrs: { id: \"comparison-menu\" } },\n          [\n            _vm._l(_vm.characterList, function(character, index) {\n              return _c(\n                \"li\",\n                {\n                  class: character == _vm.selectedCharacter ? \"selected\" : \"\",\n                  on: {\n                    click: function($event) {\n                      return _vm.setSelectedCharacter(character)\n                    }\n                  }\n                },\n                [_vm._v(\"\\n\\t\\t\\t\" + _vm._s(character.name) + \"\\n\\t\\t\")]\n              )\n            }),\n            _vm._v(\" \"),\n            _vm._m(0)\n          ],\n          2\n        )\n      : _vm._e(),\n    _vm._v(\" \"),\n    _c(\n      \"div\",\n      { attrs: { id: \"comparison-inner-wrapper\" } },\n      [_c(\"ComparisonItem\", { attrs: { item: _vm.selectedCharacter } })],\n      1\n    )\n  ])\n}\nvar staticRenderFns = [\n  function() {\n    var _vm = this\n    var _h = _vm.$createElement\n    var _c = _vm._self._c || _h\n    return _c(\"li\", [\n      _c(\"p\", { staticClass: \"disclaimer\" }, [\n        _vm._v(\"More Heroes Coming Soon...\")\n      ])\n    ])\n  }\n]\nrender._withStripped = true\n\n\n\n//# sourceURL=webpack:///./src/components/Comparison.vue?./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return render; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"staticRenderFns\", function() { return staticRenderFns; });\nvar render = function() {\n  var _vm = this\n  var _h = _vm.$createElement\n  var _c = _vm._self._c || _h\n  return _c(\"div\", { attrs: { id: \"comparison-wrapper\" } }, [\n    _c(\n      \"div\",\n      {\n        class: _vm.menuIsVisible\n          ? \"on hamburger-menu has_text\"\n          : \"hamburger-menu has_text\",\n        attrs: { id: \"comparison-menu-toggle\" },\n        on: { click: _vm.displayMenu }\n      },\n      [_vm._v(\"\\n\\t\\tChoose A Hero\\n\\t\")]\n    ),\n    _vm._v(\" \"),\n    _vm.menuIsVisible\n      ? _c(\n          \"ul\",\n          { staticClass: \"toggle-menu\", attrs: { id: \"comparison-menu\" } },\n          [\n            _vm._l(_vm.characterList, function(character, index) {\n              return _c(\n                \"li\",\n                {\n                  class: character == _vm.selectedCharacter ? \"selected\" : \"\",\n                  on: {\n                    click: function($event) {\n                      return _vm.setSelectedCharacter(character)\n                    }\n                  }\n                },\n                [_vm._v(\"\\n\\t\\t\\t\" + _vm._s(character.name) + \"\\n\\t\\t\")]\n              )\n            }),\n            _vm._v(\" \"),\n            _vm._m(0)\n          ],\n          2\n        )\n      : _vm._e(),\n    _vm._v(\" \"),\n    _c(\n      \"div\",\n      { attrs: { id: \"comparison-inner-wrapper\" } },\n      [_c(\"ComparisonItem\", { attrs: { item: _vm.selectedCharacter } })],\n      1\n    )\n  ])\n}\nvar staticRenderFns = [\n  function() {\n    var _vm = this\n    var _h = _vm.$createElement\n    var _c = _vm._self._c || _h\n    return _c(\"li\", [\n      _c(\"p\", { staticClass: \"disclaimer\" }, [\n        _vm._v(\"More Heroes Coming Soon...\")\n      ])\n    ])\n  }\n]\nrender._withStripped = true\n\n\n\n//# sourceURL=webpack:///./src/components/Comparison.vue?./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options");
 
 /***/ }),
 
@@ -295,7 +1060,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) *
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return render; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"staticRenderFns\", function() { return staticRenderFns; });\nvar render = function() {\n  var _vm = this\n  var _h = _vm.$createElement\n  var _c = _vm._self._c || _h\n  return _c(\"div\", { attrs: { id: \"comparison-item-wrapper\" } }, [\n    _c(\"div\", { attrs: { id: \"comparison-item-inner-wrapper\" } }, [\n      _c(\"div\", {\n        staticClass: \"comp-item\",\n        style:\n          \"background-image: url('\" +\n          _vm.getFileName(_vm.item.comparison.film.imageUrl) +\n          \"');\",\n        attrs: { id: \"comp-a\" }\n      }),\n      _vm._v(\" \"),\n      _c(\"div\", {\n        staticClass: \"comp-item\",\n        style:\n          \"background-image: url('\" +\n          _vm.getFileName(_vm.item.comparison.comic.imageUrl) +\n          \"');\",\n        attrs: { id: \"comp-b\" }\n      })\n    ]),\n    _vm._v(\" \"),\n    _c(\"div\", { attrs: { id: \"comparison-item-stats\" } }, [\n      _c(\"p\", { staticClass: \"main-stats name\" }, [\n        _vm._v(\"\\n\\t\\t\\t\" + _vm._s(_vm.item.name) + \"\\n\\t\\t\")\n      ]),\n      _vm._v(\" \"),\n      _c(\"p\", { staticClass: \"main-stats alias\" }, [\n        _vm._v(\"\\n\\t\\t\\t\" + _vm._s(_vm.item.alias) + \"\\n\\t\\t\")\n      ]),\n      _vm._v(\" \"),\n      _c(\n        \"ul\",\n        _vm._l(_vm.moviesWithCharacter, function(movie) {\n          return _c(\"li\", { staticClass: \"movies main-stats\" }, [\n            _vm._v(\"\\n\\t\\t\\t\\t\" + _vm._s(movie.name) + \"\\n\\t\\t\\t\")\n          ])\n        }),\n        0\n      )\n    ])\n  ])\n}\nvar staticRenderFns = []\nrender._withStripped = true\n\n\n\n//# sourceURL=webpack:///./src/components/ComparisonItem.vue?./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return render; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"staticRenderFns\", function() { return staticRenderFns; });\nvar render = function() {\n  var _vm = this\n  var _h = _vm.$createElement\n  var _c = _vm._self._c || _h\n  return _c(\"div\", { attrs: { id: \"comparison-item-wrapper\" } }, [\n    _c(\n      \"div\",\n      {\n        style:\n          \"background-image: url('\" +\n          _vm.getFileName(_vm.selectedImgToDisplay) +\n          \"');\",\n        attrs: { id: \"comparison-item-inner-wrapper\" }\n      },\n      [\n        _c(\"div\", { staticClass: \"toggle-view-wrapper\" }, [\n          _vm._v(\"\\n\\t\\t\\t\\n\\t\\t\\tMCU\\n\\n\\t\\t\\t\"),\n          _c(\"button\", {\n            class: _vm.viewMode == \"MCU\" ? \"toggle-view\" : \"toggle-view on\",\n            on: {\n              click: function($event) {\n                return _vm.toggleViewMode()\n              }\n            }\n          }),\n          _vm._v(\"\\n\\n\\t\\t\\tComic\\n\\n\\t\\t\")\n        ])\n      ]\n    ),\n    _vm._v(\" \"),\n    _c(\n      \"div\",\n      { attrs: { id: \"comparison-item-stats\" } },\n      [\n        _c(\"p\", { staticClass: \"main-stats name\" }, [\n          _vm._v(\"\\n\\t\\t\\t\" + _vm._s(_vm.item.name) + \"\\n\\t\\t\")\n        ]),\n        _vm._v(\" \"),\n        _c(\"p\", { staticClass: \"main-stats alias\" }, [\n          _vm._v(\"\\n\\t\\t\\t\" + _vm._s(_vm.item.alias) + \"\\n\\t\\t\")\n        ]),\n        _vm._v(\" \"),\n        _c(\"div\", { staticClass: \"char-content-wrapper right\" }, [\n          _c(\"h2\", [_vm._v(\"Appearances\")]),\n          _vm._v(\" \"),\n          _c(\n            \"ul\",\n            { staticClass: \"related-movies\" },\n            _vm._l(_vm.moviesWithCharacter, function(movie) {\n              return _c(\n                \"li\",\n                {\n                  staticClass: \"movies main-stats\",\n                  on: {\n                    click: function($event) {\n                      return _vm.setSelectedMovie(movie)\n                    }\n                  }\n                },\n                [\n                  _c(\"div\", {\n                    staticClass: \"related-movie-thumb\",\n                    style:\n                      \"background-image: url('\" +\n                      _vm.getFileName(movie.poster) +\n                      \"');\"\n                  }),\n                  _vm._v(\" \"),\n                  _c(\"h3\", [\n                    _vm._v(\n                      \"\\n\\t\\t\\t\\t\\t\\t\" + _vm._s(movie.name) + \"\\n\\t\\t\\t\\t\\t\"\n                    )\n                  ])\n                ]\n              )\n            }),\n            0\n          )\n        ]),\n        _vm._v(\" \"),\n        _c(\"RelatedCharacterList\", {\n          attrs: {\n            item: _vm.item,\n            handleCharacterClick: _vm.handleCharacterClick\n          }\n        })\n      ],\n      1\n    )\n  ])\n}\nvar staticRenderFns = []\nrender._withStripped = true\n\n\n\n//# sourceURL=webpack:///./src/components/ComparisonItem.vue?./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options");
 
 /***/ }),
 
@@ -307,7 +1072,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) *
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return render; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"staticRenderFns\", function() { return staticRenderFns; });\nvar render = function() {\n  var _vm = this\n  var _h = _vm.$createElement\n  var _c = _vm._self._c || _h\n  return _c(\n    \"div\",\n    {\n      class: _vm.timerIsLarge\n        ? \"large-timer timer-wrapper\"\n        : \"small-timer timer-wrapper\",\n      style: {\n        background: \"url(\" + _vm.filmWallpaper + \") no-repeat center top 0px\",\n        backgroundSize: \"cover\"\n      }\n    },\n    [\n      _vm._t(\"navbar\"),\n      _vm._v(\" \"),\n      _c(\n        \"div\",\n        {\n          class: _vm.days < 3 ? \"inner-wrapper timer-warning\" : \"inner-wrapper\"\n        },\n        [\n          _c(\"img\", {\n            attrs: {\n              alt: \"Latest Film Logo\",\n              src: \"/dist/Assets/\" + _vm.film.logo\n            }\n          }),\n          _vm._v(\" \"),\n          _vm.days < 1 && _vm.hours < 1 && _vm.minutes < 1 && _vm.seconds < 1\n            ? _c(\n                \"a\",\n                {\n                  staticClass: \"get-tickets-link\",\n                  attrs: { href: _vm.ticketsUrl }\n                },\n                [_vm._v(\"\\n\\t\\t\\tGet Tickets Now\\n\\t\\t\")]\n              )\n            : _c(\"div\", { staticClass: \"timer-content\" }, [\n                _c(\"div\", [\n                  _c(\"p\", { staticClass: \"lbl\" }, [_vm._v(\"DAYS\")]),\n                  _vm._v(\" \"),\n                  _c(\"p\", { staticClass: \"num\" }, [_vm._v(_vm._s(_vm.days))])\n                ]),\n                _vm._v(\" \"),\n                _c(\"div\", [\n                  _c(\"p\", { staticClass: \"lbl\" }, [\n                    _vm._v(\"\\n\\t\\t\\t\\t\\tHOURS\\n\\t\\t\\t\\t\")\n                  ]),\n                  _vm._v(\" \"),\n                  _c(\"p\", { staticClass: \"num\" }, [\n                    _vm._v(\"\\n\\t\\t\\t\\t\\t\" + _vm._s(_vm.hours) + \"\\n\\t\\t\\t\\t\")\n                  ])\n                ]),\n                _vm._v(\" \"),\n                _c(\"div\", [\n                  _c(\"p\", { staticClass: \"lbl\" }, [\n                    _vm._v(\"\\n\\t\\t\\t\\t\\tMINUTES\\n\\t\\t\\t\\t\")\n                  ]),\n                  _vm._v(\" \"),\n                  _c(\"p\", { staticClass: \"num\" }, [\n                    _vm._v(\"\\n\\t\\t\\t\\t\\t\" + _vm._s(_vm.minutes) + \"\\n\\t\\t\\t\\t\")\n                  ])\n                ]),\n                _vm._v(\" \"),\n                _c(\"div\", [\n                  _c(\"p\", { staticClass: \"lbl\" }, [\n                    _vm._v(\"\\n\\t\\t\\t\\t\\tSECONDS\\n\\t\\t\\t\\t\")\n                  ]),\n                  _vm._v(\" \"),\n                  _c(\"p\", { staticClass: \"num\" }, [\n                    _vm._v(\"\\n\\t\\t\\t\\t\\t\" + _vm._s(_vm.seconds) + \"\\n\\t\\t\\t\\t\")\n                  ])\n                ])\n              ]),\n          _vm._v(\" \"),\n          _c(\n            \"button\",\n            {\n              staticClass: \"trailer-btn\",\n              on: {\n                click: function($event) {\n                  return _vm.playTrailer(_vm.film, !_vm.trailerIsPlaying)\n                }\n              }\n            },\n            [_vm._v(\"\\n\\t\\t\\tLatest Trailer\\n\\t\\t\")]\n          )\n        ]\n      ),\n      _vm._v(\" \"),\n      _vm.timerIsLarge\n        ? _c(\n            \"div\",\n            {\n              directives: [\n                {\n                  name: \"scroll-to\",\n                  rawName: \"v-scroll-to\",\n                  value: \"#next-timer\",\n                  expression: \"'#next-timer'\"\n                }\n              ],\n              staticClass: \"scroll-notify center\"\n            },\n            [\n              _c(\"p\", [_vm._v(\"scroll\")]),\n              _vm._v(\" \"),\n              _c(\"p\", { staticClass: \"scroll-icon\" })\n            ]\n          )\n        : _vm._e(),\n      _vm._v(\" \"),\n      _vm.timerIsLarge &&\n      _vm.days > 1 &&\n      _vm.hours > 1 &&\n      _vm.minutes > 1 &&\n      _vm.seconds > 1\n        ? _c(\"a\", {\n            staticClass: \"twitter-share-button twitter-icon\",\n            attrs: {\n              href:\n                \"https://twitter.com/share?url=\" +\n                _vm.getCurrentWebpage +\n                \"&text=\" +\n                _vm.getMessageByTimer(_vm.days, _vm.hours, _vm.minutes),\n              \"data-show-count\": \"false\"\n            }\n          })\n        : _vm.timerIsLarge\n        ? _c(\"a\", {\n            staticClass: \"twitter-share-button twitter-icon\",\n            attrs: {\n              href:\n                \"https://twitter.com/share?url=\" +\n                _vm.getCurrentWebpage +\n                \"&text=\" +\n                _vm.getMessage(\"Captain Marvel is out in theaters!\"),\n              \"data-show-count\": \"false\"\n            }\n          })\n        : _vm._e(),\n      _vm._v(\" \"),\n      _vm.timerIsLarge &&\n      _vm.days > 1 &&\n      _vm.hours > 1 &&\n      _vm.minutes > 1 &&\n      _vm.seconds > 1\n        ? _c(\"a\", {\n            staticClass: \"reddit-icon\",\n            attrs: {\n              href:\n                \"https://www.reddit.com/submit?styled=off&url=\" +\n                _vm.getCurrentWebpage +\n                \"&title=\" +\n                _vm.getMessageByTimer(_vm.days, _vm.hours, _vm.minutes)\n            }\n          })\n        : _vm.timerIsLarge\n        ? _c(\"a\", {\n            staticClass: \"reddit-icon\",\n            attrs: {\n              href:\n                \"https://www.reddit.com/submit?styled=off&url=\" +\n                _vm.getCurrentWebpage +\n                \"&title=\" +\n                _vm.getMessage(\"Captain Marvel is out in theaters!\")\n            }\n          })\n        : _vm._e()\n    ],\n    2\n  )\n}\nvar staticRenderFns = []\nrender._withStripped = true\n\n\n\n//# sourceURL=webpack:///./src/components/CountdownTimer.vue?./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return render; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"staticRenderFns\", function() { return staticRenderFns; });\nvar render = function() {\n  var _vm = this\n  var _h = _vm.$createElement\n  var _c = _vm._self._c || _h\n  return _c(\n    \"div\",\n    {\n      class: _vm.timerIsLarge\n        ? \"large-timer timer-wrapper\"\n        : \"small-timer timer-wrapper\",\n      style: {\n        background: \"url(\" + _vm.filmWallpaper + \") no-repeat center top 0px\",\n        backgroundSize: \"cover\"\n      }\n    },\n    [\n      _vm._t(\"navbar\"),\n      _vm._v(\" \"),\n      _c(\n        \"div\",\n        {\n          class: _vm.days < 3 ? \"inner-wrapper timer-warning\" : \"inner-wrapper\"\n        },\n        [\n          _c(\"img\", {\n            attrs: {\n              alt: \"Latest Film Logo\",\n              src: \"/dist/Assets/\" + _vm.film.logo\n            }\n          }),\n          _vm._v(\" \"),\n          _vm.days < 1 && _vm.hours < 1 && _vm.minutes < 1 && _vm.seconds < 1\n            ? _c(\n                \"a\",\n                {\n                  staticClass: \"get-tickets-link\",\n                  attrs: { href: _vm.ticketsUrl }\n                },\n                [_vm._v(\"\\n\\t\\t\\tGet Tickets Now\\n\\t\\t\")]\n              )\n            : _c(\"div\", { staticClass: \"timer-content\" }, [\n                _c(\"div\", [\n                  _c(\"p\", { staticClass: \"lbl\" }, [_vm._v(\"DAYS\")]),\n                  _vm._v(\" \"),\n                  _c(\"p\", { staticClass: \"num\" }, [_vm._v(_vm._s(_vm.days))])\n                ]),\n                _vm._v(\" \"),\n                _c(\"div\", [\n                  _c(\"p\", { staticClass: \"lbl\" }, [\n                    _vm._v(\"\\n\\t\\t\\t\\t\\tHOURS\\n\\t\\t\\t\\t\")\n                  ]),\n                  _vm._v(\" \"),\n                  _c(\"p\", { staticClass: \"num\" }, [\n                    _vm._v(\"\\n\\t\\t\\t\\t\\t\" + _vm._s(_vm.hours) + \"\\n\\t\\t\\t\\t\")\n                  ])\n                ]),\n                _vm._v(\" \"),\n                _c(\"div\", [\n                  _c(\"p\", { staticClass: \"lbl\" }, [\n                    _vm._v(\"\\n\\t\\t\\t\\t\\tMINUTES\\n\\t\\t\\t\\t\")\n                  ]),\n                  _vm._v(\" \"),\n                  _c(\"p\", { staticClass: \"num\" }, [\n                    _vm._v(\"\\n\\t\\t\\t\\t\\t\" + _vm._s(_vm.minutes) + \"\\n\\t\\t\\t\\t\")\n                  ])\n                ]),\n                _vm._v(\" \"),\n                _c(\"div\", [\n                  _c(\"p\", { staticClass: \"lbl\" }, [\n                    _vm._v(\"\\n\\t\\t\\t\\t\\tSECONDS\\n\\t\\t\\t\\t\")\n                  ]),\n                  _vm._v(\" \"),\n                  _c(\"p\", { staticClass: \"num\" }, [\n                    _vm._v(\"\\n\\t\\t\\t\\t\\t\" + _vm._s(_vm.seconds) + \"\\n\\t\\t\\t\\t\")\n                  ])\n                ])\n              ]),\n          _vm._v(\" \"),\n          _c(\n            \"button\",\n            {\n              staticClass: \"trailer-btn\",\n              style: \"box-shadow: inset 68px 0px 80px -25px \" + _vm.shadowColor,\n              on: {\n                click: function($event) {\n                  return _vm.playTrailer(_vm.film)\n                }\n              }\n            },\n            [_vm._v(\"\\n\\t\\t\\tLatest Trailer\\n\\t\\t\")]\n          )\n        ]\n      ),\n      _vm._v(\" \"),\n      _vm.timerIsLarge\n        ? _c(\n            \"div\",\n            {\n              directives: [\n                {\n                  name: \"scroll-to\",\n                  rawName: \"v-scroll-to\",\n                  value: \"#next-timer\",\n                  expression: \"'#next-timer'\"\n                }\n              ],\n              staticClass: \"scroll-notify center\"\n            },\n            [\n              _c(\"p\", [_vm._v(\"scroll\")]),\n              _vm._v(\" \"),\n              _c(\"p\", { staticClass: \"scroll-icon\" })\n            ]\n          )\n        : _vm._e(),\n      _vm._v(\" \"),\n      _vm.timerIsLarge &&\n      _vm.days > 1 &&\n      _vm.hours > 1 &&\n      _vm.minutes > 1 &&\n      _vm.seconds > 1\n        ? _c(\"a\", {\n            staticClass: \"twitter-share-button twitter-icon\",\n            attrs: {\n              href:\n                \"https://twitter.com/share?url=\" +\n                _vm.getCurrentWebpage +\n                \"&text=\" +\n                _vm.getMessageByTimer(_vm.days, _vm.hours, _vm.minutes),\n              \"data-show-count\": \"false\"\n            }\n          })\n        : _vm.timerIsLarge\n        ? _c(\"a\", {\n            staticClass: \"twitter-share-button twitter-icon\",\n            attrs: {\n              href:\n                \"https://twitter.com/share?url=\" +\n                _vm.getCurrentWebpage +\n                \"&text=\" +\n                _vm.getMessage(\"Captain Marvel is out in theaters!\"),\n              \"data-show-count\": \"false\"\n            }\n          })\n        : _vm._e(),\n      _vm._v(\" \"),\n      _vm.timerIsLarge &&\n      _vm.days > 1 &&\n      _vm.hours > 1 &&\n      _vm.minutes > 1 &&\n      _vm.seconds > 1\n        ? _c(\"a\", {\n            staticClass: \"reddit-icon\",\n            attrs: {\n              href:\n                \"https://www.reddit.com/submit?styled=off&url=\" +\n                _vm.getCurrentWebpage +\n                \"&title=\" +\n                _vm.getMessageByTimer(_vm.days, _vm.hours, _vm.minutes)\n            }\n          })\n        : _vm.timerIsLarge\n        ? _c(\"a\", {\n            staticClass: \"reddit-icon\",\n            attrs: {\n              href:\n                \"https://www.reddit.com/submit?styled=off&url=\" +\n                _vm.getCurrentWebpage +\n                \"&title=\" +\n                _vm.getMessage(\"Captain Marvel is out in theaters!\")\n            }\n          })\n        : _vm._e()\n    ],\n    2\n  )\n}\nvar staticRenderFns = []\nrender._withStripped = true\n\n\n\n//# sourceURL=webpack:///./src/components/CountdownTimer.vue?./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options");
 
 /***/ }),
 
@@ -355,7 +1120,19 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) *
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return render; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"staticRenderFns\", function() { return staticRenderFns; });\nvar render = function() {\n  var _vm = this\n  var _h = _vm.$createElement\n  var _c = _vm._self._c || _h\n  return _c(\"nav\", { attrs: { id: \"navigation-wrapper\" } }, [\n    _c(\"a\", { staticClass: \"logo-top\", attrs: { href: \"/\" } }),\n    _vm._v(\" \"),\n    _c(\n      \"div\",\n      {\n        class: _vm.displayMenu ? \"on\" : \"off\",\n        attrs: { id: \"menu-content-wrapper\" }\n      },\n      [\n        _c(\"a\", { attrs: { href: \"/comparisons\" } }, [_vm._v(\"Comparisons\")]),\n        _vm._v(\" \"),\n        _c(\"a\", { attrs: { href: \"/about\" } }, [_vm._v(\"About\")])\n      ]\n    ),\n    _vm._v(\" \"),\n    _c(\"button\", {\n      class: _vm.displayMenu ? \"on hamburger-menu\" : \"hamburger-menu\",\n      on: {\n        click: function($event) {\n          _vm.displayMenu = !_vm.displayMenu\n        }\n      }\n    })\n  ])\n}\nvar staticRenderFns = []\nrender._withStripped = true\n\n\n\n//# sourceURL=webpack:///./src/components/NavigationBar.vue?./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return render; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"staticRenderFns\", function() { return staticRenderFns; });\nvar render = function() {\n  var _vm = this\n  var _h = _vm.$createElement\n  var _c = _vm._self._c || _h\n  return _c(\"nav\", { attrs: { id: \"navigation-wrapper\" } }, [\n    _c(\"a\", { staticClass: \"logo-top\", attrs: { href: \"/\" } }),\n    _vm._v(\" \"),\n    _c(\n      \"div\",\n      {\n        class: _vm.displayMenu ? \"on\" : \"off\",\n        attrs: { id: \"menu-content-wrapper\" }\n      },\n      [\n        _c(\"a\", { attrs: { href: \"/characters\" } }, [_vm._v(\"Characters\")]),\n        _vm._v(\" \"),\n        _c(\"a\", { attrs: { href: \"/about\" } }, [_vm._v(\"About\")])\n      ]\n    ),\n    _vm._v(\" \"),\n    _c(\"button\", {\n      class: _vm.displayMenu ? \"on hamburger-menu\" : \"hamburger-menu\",\n      on: {\n        click: function($event) {\n          _vm.displayMenu = !_vm.displayMenu\n        }\n      }\n    })\n  ])\n}\nvar staticRenderFns = []\nrender._withStripped = true\n\n\n\n//# sourceURL=webpack:///./src/components/NavigationBar.vue?./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options");
+
+/***/ }),
+
+/***/ "./node_modules/vue-loader/lib/loaders/templateLoader.js?!./node_modules/vue-loader/lib/index.js?!./src/components/RelatedCharacterList.vue?vue&type=template&id=cbb099a8&":
+/*!**************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options!./src/components/RelatedCharacterList.vue?vue&type=template&id=cbb099a8& ***!
+  \**************************************************************************************************************************************************************************************************************/
+/*! exports provided: render, staticRenderFns */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return render; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"staticRenderFns\", function() { return staticRenderFns; });\nvar render = function() {\n  var _vm = this\n  var _h = _vm.$createElement\n  var _c = _vm._self._c || _h\n  return _c(\"div\", { staticClass: \"char-content-wrapper left\" }, [\n    _c(\"h2\", [_vm._v(\"Related Characters\")]),\n    _vm._v(\" \"),\n    _c(\n      \"div\",\n      { staticClass: \"related-character-wrapper\" },\n      _vm._l(_vm.getRelatedCharacters, function(character) {\n        return _c(\n          \"span\",\n          {\n            staticClass: \"related-character-thumb\",\n            on: {\n              click: function($event) {\n                return _vm.handleCharacterClick(character)\n              }\n            }\n          },\n          [\n            _c(\"div\", {\n              staticClass: \"related-thumb\",\n              style:\n                \"background-image: url('\" +\n                _vm.getImageWithLocalPath(character.comparison.film.imageUrl) +\n                \"');\"\n            }),\n            _vm._v(\" \"),\n            _c(\"h3\", [_vm._v(_vm._s(character.name))])\n          ]\n        )\n      }),\n      0\n    )\n  ])\n}\nvar staticRenderFns = []\nrender._withStripped = true\n\n\n\n//# sourceURL=webpack:///./src/components/RelatedCharacterList.vue?./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options");
 
 /***/ }),
 
@@ -379,7 +1156,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) *
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return render; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"staticRenderFns\", function() { return staticRenderFns; });\nvar render = function() {\n  var _vm = this\n  var _h = _vm.$createElement\n  var _c = _vm._self._c || _h\n  return _c(\"div\", { attrs: { id: \"timeline-wrapper\" } }, [\n    _c(\"div\", { staticClass: \"toggle-view-wrapper\" }, [\n      _vm._v(\"\\n\\t\\tGrid\\n\\t\\t\"),\n      _c(\"button\", {\n        class:\n          _vm.selectedView == \"grid-view\" ? \"toggle-view\" : \"toggle-view on\",\n        on: {\n          click: function($event) {\n            return _vm.toggleView()\n          }\n        }\n      }),\n      _vm._v(\"\\n\\n\\t\\tTimeline\\n\\t\")\n    ]),\n    _vm._v(\" \"),\n    _c(\n      \"ul\",\n      { class: _vm.selectedView },\n      _vm._l(_vm.movieList, function(movie) {\n        return _c(\n          \"li\",\n          {\n            key: movie.id,\n            style:\n              \"background-image: url('\" +\n              _vm.getPosterUrl(movie.poster) +\n              \"');\",\n            on: {\n              click: function($event) {\n                return _vm.setSelectedMovie(movie)\n              }\n            }\n          },\n          [\n            _c(\"TimelineItem\", {\n              attrs: { movie: movie, startPlaying: _vm.trailerIsPlaying }\n            })\n          ],\n          1\n        )\n      }),\n      0\n    )\n  ])\n}\nvar staticRenderFns = []\nrender._withStripped = true\n\n\n\n//# sourceURL=webpack:///./src/components/Timeline.vue?./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return render; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"staticRenderFns\", function() { return staticRenderFns; });\nvar render = function() {\n  var _vm = this\n  var _h = _vm.$createElement\n  var _c = _vm._self._c || _h\n  return _c(\"div\", { attrs: { id: \"timeline-wrapper\" } }, [\n    _c(\"div\", { staticClass: \"toggle-view-wrapper\" }, [\n      _vm._v(\"\\n\\t\\tGrid\\n\\t\\t\"),\n      _c(\"button\", {\n        class:\n          _vm.selectedView == \"grid-view\" ? \"toggle-view\" : \"toggle-view on\",\n        on: {\n          click: function($event) {\n            return _vm.toggleView()\n          }\n        }\n      }),\n      _vm._v(\"\\n\\n\\t\\tTimeline\\n\\t\")\n    ]),\n    _vm._v(\" \"),\n    _c(\n      \"ul\",\n      { class: _vm.selectedView },\n      _vm._l(_vm.movieList, function(movie) {\n        return _c(\n          \"li\",\n          {\n            key: movie.id,\n            style:\n              \"background-image: url('\" +\n              _vm.getPosterUrl(movie.poster) +\n              \"');\",\n            on: {\n              click: function($event) {\n                return _vm.setSelectedMovie(movie)\n              }\n            }\n          },\n          [_c(\"TimelineItem\", { attrs: { movie: movie } })],\n          1\n        )\n      }),\n      0\n    )\n  ])\n}\nvar staticRenderFns = []\nrender._withStripped = true\n\n\n\n//# sourceURL=webpack:///./src/components/Timeline.vue?./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options");
 
 /***/ }),
 
@@ -403,7 +1180,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) *
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return render; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"staticRenderFns\", function() { return staticRenderFns; });\nvar render = function() {\n  var _vm = this\n  var _h = _vm.$createElement\n  var _c = _vm._self._c || _h\n  return _vm.startPlaying\n    ? _c(\"div\", { attrs: { id: \"trailer-modal-wrapper\" } }, [\n        _c(\"div\", { staticClass: \"movie-meta\" }, [\n          _c(\"h2\", [_vm._v(_vm._s(_vm.selectedMovie.name))]),\n          _vm._v(\" \"),\n          _c(\"tr\"),\n          _vm._v(\" \"),\n          _c(\"h5\", [_vm._v(_vm._s(_vm.selectedMovie.releaseDate))]),\n          _vm._v(\" \"),\n          _c(\"img\", {\n            attrs: {\n              alt: _vm.selectedMovie.name + \" Poster\",\n              src: _vm.getImageWithLocalPath(_vm.selectedMovie.poster)\n            }\n          }),\n          _vm._v(\" \"),\n          _c(\n            \"button\",\n            {\n              staticClass: \"hide-player\",\n              on: {\n                click: function($event) {\n                  return _vm.hidePlayer()\n                }\n              }\n            },\n            [_vm._v(\"\\n\\t\\t\\tReturn to TimeLine\\n\\t\\t\")]\n          )\n        ]),\n        _vm._v(\" \"),\n        _c(\"div\", { staticClass: \"iframe-wrapper\" }, [\n          _c(\"iframe\", {\n            attrs: {\n              src: _vm.getTrailerEmbedUrl(),\n              frameborder: \"0\",\n              allow: \"autoplay; encrypted-media\",\n              allowfullscreen: \"\"\n            }\n          })\n        ])\n      ])\n    : _vm._e()\n}\nvar staticRenderFns = []\nrender._withStripped = true\n\n\n\n//# sourceURL=webpack:///./src/components/TrailerModal.vue?./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return render; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"staticRenderFns\", function() { return staticRenderFns; });\nvar render = function() {\n  var _vm = this\n  var _h = _vm.$createElement\n  var _c = _vm._self._c || _h\n  return _vm.selectedMovie !== null && _vm.videoIsPlaying\n    ? _c(\"div\", { attrs: { id: \"trailer-modal-wrapper\" } }, [\n        _c(\"div\", { staticClass: \"movie-meta\" }, [\n          _c(\"h2\", [_vm._v(_vm._s(_vm.selectedMovie.name))]),\n          _vm._v(\" \"),\n          _c(\"tr\"),\n          _vm._v(\" \"),\n          _c(\"h5\", [_vm._v(_vm._s(_vm.selectedMovie.releaseDate))]),\n          _vm._v(\" \"),\n          _c(\"img\", {\n            attrs: {\n              alt: _vm.selectedMovie.name + \" Poster\",\n              src: _vm.getFileName(_vm.selectedMovie.poster)\n            }\n          }),\n          _vm._v(\" \"),\n          _c(\n            \"button\",\n            {\n              staticClass: \"hide-player\",\n              on: {\n                click: function($event) {\n                  return _vm.hidePlayer()\n                }\n              }\n            },\n            [_vm._v(\"\\n\\t\\t\\tGo Back\\n\\t\\t\")]\n          )\n        ]),\n        _vm._v(\" \"),\n        _c(\"div\", { staticClass: \"iframe-wrapper\" }, [\n          _c(\"iframe\", {\n            attrs: {\n              src: _vm.getTrailerEmbedUrl(),\n              frameborder: \"0\",\n              allow: \"autoplay; encrypted-media\",\n              allowfullscreen: \"\"\n            }\n          })\n        ])\n      ])\n    : _vm._e()\n}\nvar staticRenderFns = []\nrender._withStripped = true\n\n\n\n//# sourceURL=webpack:///./src/components/TrailerModal.vue?./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options");
 
 /***/ }),
 
@@ -473,7 +1250,7 @@ eval("var g;\n\n// This works in non-strict mode\ng = (function() {\n\treturn th
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _App_vue_vue_type_template_id_7ba5bd90___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./App.vue?vue&type=template&id=7ba5bd90& */ \"./src/App.vue?vue&type=template&id=7ba5bd90&\");\n/* harmony import */ var _App_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./App.vue?vue&type=script&lang=js& */ \"./src/App.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _App_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _App_vue_vue_type_template_id_7ba5bd90___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _App_vue_vue_type_template_id_7ba5bd90___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (false) { var api; }\ncomponent.options.__file = \"src/App.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/App.vue?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _App_vue_vue_type_template_id_7ba5bd90___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./App.vue?vue&type=template&id=7ba5bd90& */ \"./src/App.vue?vue&type=template&id=7ba5bd90&\");\n/* harmony import */ var _App_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./App.vue?vue&type=script&lang=js& */ \"./src/App.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _App_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _App_vue_vue_type_template_id_7ba5bd90___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _App_vue_vue_type_template_id_7ba5bd90___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (true) {\n  var api = __webpack_require__(/*! ./node_modules/vue-hot-reload-api/dist/index.js */ \"./node_modules/vue-hot-reload-api/dist/index.js\")\n  api.install(__webpack_require__(/*! vue */ \"./node_modules/vue/dist/vue.esm.js\"))\n  if (api.compatible) {\n    module.hot.accept()\n    if (!module.hot.data) {\n      api.createRecord('7ba5bd90', component.options)\n    } else {\n      api.reload('7ba5bd90', component.options)\n    }\n    module.hot.accept(/*! ./App.vue?vue&type=template&id=7ba5bd90& */ \"./src/App.vue?vue&type=template&id=7ba5bd90&\", function(__WEBPACK_OUTDATED_DEPENDENCIES__) { /* harmony import */ _App_vue_vue_type_template_id_7ba5bd90___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./App.vue?vue&type=template&id=7ba5bd90& */ \"./src/App.vue?vue&type=template&id=7ba5bd90&\");\n(function () {\n      api.rerender('7ba5bd90', {\n        render: _App_vue_vue_type_template_id_7ba5bd90___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n        staticRenderFns: _App_vue_vue_type_template_id_7ba5bd90___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"]\n      })\n    })(__WEBPACK_OUTDATED_DEPENDENCIES__); }.bind(this))\n  }\n}\ncomponent.options.__file = \"src/App.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/App.vue?");
 
 /***/ }),
 
@@ -1492,6 +2269,42 @@ eval("module.exports = __webpack_require__.p + \"Assets/youtube-icon.png?4fddf04
 
 /***/ }),
 
+/***/ "./src/components/AllCharactersList.vue":
+/*!**********************************************!*\
+  !*** ./src/components/AllCharactersList.vue ***!
+  \**********************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _AllCharactersList_vue_vue_type_template_id_2f2ab5a9___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./AllCharactersList.vue?vue&type=template&id=2f2ab5a9& */ \"./src/components/AllCharactersList.vue?vue&type=template&id=2f2ab5a9&\");\n/* harmony import */ var _AllCharactersList_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./AllCharactersList.vue?vue&type=script&lang=js& */ \"./src/components/AllCharactersList.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _AllCharactersList_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _AllCharactersList_vue_vue_type_template_id_2f2ab5a9___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _AllCharactersList_vue_vue_type_template_id_2f2ab5a9___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (true) {\n  var api = __webpack_require__(/*! ./node_modules/vue-hot-reload-api/dist/index.js */ \"./node_modules/vue-hot-reload-api/dist/index.js\")\n  api.install(__webpack_require__(/*! vue */ \"./node_modules/vue/dist/vue.esm.js\"))\n  if (api.compatible) {\n    module.hot.accept()\n    if (!module.hot.data) {\n      api.createRecord('2f2ab5a9', component.options)\n    } else {\n      api.reload('2f2ab5a9', component.options)\n    }\n    module.hot.accept(/*! ./AllCharactersList.vue?vue&type=template&id=2f2ab5a9& */ \"./src/components/AllCharactersList.vue?vue&type=template&id=2f2ab5a9&\", function(__WEBPACK_OUTDATED_DEPENDENCIES__) { /* harmony import */ _AllCharactersList_vue_vue_type_template_id_2f2ab5a9___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./AllCharactersList.vue?vue&type=template&id=2f2ab5a9& */ \"./src/components/AllCharactersList.vue?vue&type=template&id=2f2ab5a9&\");\n(function () {\n      api.rerender('2f2ab5a9', {\n        render: _AllCharactersList_vue_vue_type_template_id_2f2ab5a9___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n        staticRenderFns: _AllCharactersList_vue_vue_type_template_id_2f2ab5a9___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"]\n      })\n    })(__WEBPACK_OUTDATED_DEPENDENCIES__); }.bind(this))\n  }\n}\ncomponent.options.__file = \"src/components/AllCharactersList.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/AllCharactersList.vue?");
+
+/***/ }),
+
+/***/ "./src/components/AllCharactersList.vue?vue&type=script&lang=js&":
+/*!***********************************************************************!*\
+  !*** ./src/components/AllCharactersList.vue?vue&type=script&lang=js& ***!
+  \***********************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _node_modules_babel_loader_lib_index_js_node_modules_vue_loader_lib_index_js_vue_loader_options_AllCharactersList_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../node_modules/babel-loader/lib!../../node_modules/vue-loader/lib??vue-loader-options!./AllCharactersList.vue?vue&type=script&lang=js& */ \"./node_modules/babel-loader/lib/index.js!./node_modules/vue-loader/lib/index.js?!./src/components/AllCharactersList.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport */ /* harmony default export */ __webpack_exports__[\"default\"] = (_node_modules_babel_loader_lib_index_js_node_modules_vue_loader_lib_index_js_vue_loader_options_AllCharactersList_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_0__[\"default\"]); \n\n//# sourceURL=webpack:///./src/components/AllCharactersList.vue?");
+
+/***/ }),
+
+/***/ "./src/components/AllCharactersList.vue?vue&type=template&id=2f2ab5a9&":
+/*!*****************************************************************************!*\
+  !*** ./src/components/AllCharactersList.vue?vue&type=template&id=2f2ab5a9& ***!
+  \*****************************************************************************/
+/*! exports provided: render, staticRenderFns */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _node_modules_vue_loader_lib_loaders_templateLoader_js_vue_loader_options_node_modules_vue_loader_lib_index_js_vue_loader_options_AllCharactersList_vue_vue_type_template_id_2f2ab5a9___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!../../node_modules/vue-loader/lib??vue-loader-options!./AllCharactersList.vue?vue&type=template&id=2f2ab5a9& */ \"./node_modules/vue-loader/lib/loaders/templateLoader.js?!./node_modules/vue-loader/lib/index.js?!./src/components/AllCharactersList.vue?vue&type=template&id=2f2ab5a9&\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return _node_modules_vue_loader_lib_loaders_templateLoader_js_vue_loader_options_node_modules_vue_loader_lib_index_js_vue_loader_options_AllCharactersList_vue_vue_type_template_id_2f2ab5a9___WEBPACK_IMPORTED_MODULE_0__[\"render\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"staticRenderFns\", function() { return _node_modules_vue_loader_lib_loaders_templateLoader_js_vue_loader_options_node_modules_vue_loader_lib_index_js_vue_loader_options_AllCharactersList_vue_vue_type_template_id_2f2ab5a9___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"]; });\n\n\n\n//# sourceURL=webpack:///./src/components/AllCharactersList.vue?");
+
+/***/ }),
+
 /***/ "./src/components/Comparison.vue":
 /*!***************************************!*\
   !*** ./src/components/Comparison.vue ***!
@@ -1500,7 +2313,7 @@ eval("module.exports = __webpack_require__.p + \"Assets/youtube-icon.png?4fddf04
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _Comparison_vue_vue_type_template_id_c7b24c8e___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Comparison.vue?vue&type=template&id=c7b24c8e& */ \"./src/components/Comparison.vue?vue&type=template&id=c7b24c8e&\");\n/* harmony import */ var _Comparison_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Comparison.vue?vue&type=script&lang=js& */ \"./src/components/Comparison.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _Comparison_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _Comparison_vue_vue_type_template_id_c7b24c8e___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _Comparison_vue_vue_type_template_id_c7b24c8e___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (false) { var api; }\ncomponent.options.__file = \"src/components/Comparison.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/Comparison.vue?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _Comparison_vue_vue_type_template_id_c7b24c8e___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Comparison.vue?vue&type=template&id=c7b24c8e& */ \"./src/components/Comparison.vue?vue&type=template&id=c7b24c8e&\");\n/* harmony import */ var _Comparison_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Comparison.vue?vue&type=script&lang=js& */ \"./src/components/Comparison.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _Comparison_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _Comparison_vue_vue_type_template_id_c7b24c8e___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _Comparison_vue_vue_type_template_id_c7b24c8e___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (true) {\n  var api = __webpack_require__(/*! ./node_modules/vue-hot-reload-api/dist/index.js */ \"./node_modules/vue-hot-reload-api/dist/index.js\")\n  api.install(__webpack_require__(/*! vue */ \"./node_modules/vue/dist/vue.esm.js\"))\n  if (api.compatible) {\n    module.hot.accept()\n    if (!module.hot.data) {\n      api.createRecord('c7b24c8e', component.options)\n    } else {\n      api.reload('c7b24c8e', component.options)\n    }\n    module.hot.accept(/*! ./Comparison.vue?vue&type=template&id=c7b24c8e& */ \"./src/components/Comparison.vue?vue&type=template&id=c7b24c8e&\", function(__WEBPACK_OUTDATED_DEPENDENCIES__) { /* harmony import */ _Comparison_vue_vue_type_template_id_c7b24c8e___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Comparison.vue?vue&type=template&id=c7b24c8e& */ \"./src/components/Comparison.vue?vue&type=template&id=c7b24c8e&\");\n(function () {\n      api.rerender('c7b24c8e', {\n        render: _Comparison_vue_vue_type_template_id_c7b24c8e___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n        staticRenderFns: _Comparison_vue_vue_type_template_id_c7b24c8e___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"]\n      })\n    })(__WEBPACK_OUTDATED_DEPENDENCIES__); }.bind(this))\n  }\n}\ncomponent.options.__file = \"src/components/Comparison.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/Comparison.vue?");
 
 /***/ }),
 
@@ -1536,7 +2349,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _nod
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _ComparisonItem_vue_vue_type_template_id_f5230228___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./ComparisonItem.vue?vue&type=template&id=f5230228& */ \"./src/components/ComparisonItem.vue?vue&type=template&id=f5230228&\");\n/* harmony import */ var _ComparisonItem_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./ComparisonItem.vue?vue&type=script&lang=js& */ \"./src/components/ComparisonItem.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _ComparisonItem_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _ComparisonItem_vue_vue_type_template_id_f5230228___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _ComparisonItem_vue_vue_type_template_id_f5230228___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (false) { var api; }\ncomponent.options.__file = \"src/components/ComparisonItem.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/ComparisonItem.vue?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _ComparisonItem_vue_vue_type_template_id_f5230228___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./ComparisonItem.vue?vue&type=template&id=f5230228& */ \"./src/components/ComparisonItem.vue?vue&type=template&id=f5230228&\");\n/* harmony import */ var _ComparisonItem_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./ComparisonItem.vue?vue&type=script&lang=js& */ \"./src/components/ComparisonItem.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _ComparisonItem_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _ComparisonItem_vue_vue_type_template_id_f5230228___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _ComparisonItem_vue_vue_type_template_id_f5230228___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (true) {\n  var api = __webpack_require__(/*! ./node_modules/vue-hot-reload-api/dist/index.js */ \"./node_modules/vue-hot-reload-api/dist/index.js\")\n  api.install(__webpack_require__(/*! vue */ \"./node_modules/vue/dist/vue.esm.js\"))\n  if (api.compatible) {\n    module.hot.accept()\n    if (!module.hot.data) {\n      api.createRecord('f5230228', component.options)\n    } else {\n      api.reload('f5230228', component.options)\n    }\n    module.hot.accept(/*! ./ComparisonItem.vue?vue&type=template&id=f5230228& */ \"./src/components/ComparisonItem.vue?vue&type=template&id=f5230228&\", function(__WEBPACK_OUTDATED_DEPENDENCIES__) { /* harmony import */ _ComparisonItem_vue_vue_type_template_id_f5230228___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./ComparisonItem.vue?vue&type=template&id=f5230228& */ \"./src/components/ComparisonItem.vue?vue&type=template&id=f5230228&\");\n(function () {\n      api.rerender('f5230228', {\n        render: _ComparisonItem_vue_vue_type_template_id_f5230228___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n        staticRenderFns: _ComparisonItem_vue_vue_type_template_id_f5230228___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"]\n      })\n    })(__WEBPACK_OUTDATED_DEPENDENCIES__); }.bind(this))\n  }\n}\ncomponent.options.__file = \"src/components/ComparisonItem.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/ComparisonItem.vue?");
 
 /***/ }),
 
@@ -1572,7 +2385,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _nod
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _CountdownTimer_vue_vue_type_template_id_c19ac878___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./CountdownTimer.vue?vue&type=template&id=c19ac878& */ \"./src/components/CountdownTimer.vue?vue&type=template&id=c19ac878&\");\n/* harmony import */ var _CountdownTimer_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./CountdownTimer.vue?vue&type=script&lang=js& */ \"./src/components/CountdownTimer.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _CountdownTimer_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _CountdownTimer_vue_vue_type_template_id_c19ac878___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _CountdownTimer_vue_vue_type_template_id_c19ac878___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (false) { var api; }\ncomponent.options.__file = \"src/components/CountdownTimer.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/CountdownTimer.vue?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _CountdownTimer_vue_vue_type_template_id_c19ac878___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./CountdownTimer.vue?vue&type=template&id=c19ac878& */ \"./src/components/CountdownTimer.vue?vue&type=template&id=c19ac878&\");\n/* harmony import */ var _CountdownTimer_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./CountdownTimer.vue?vue&type=script&lang=js& */ \"./src/components/CountdownTimer.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _CountdownTimer_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _CountdownTimer_vue_vue_type_template_id_c19ac878___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _CountdownTimer_vue_vue_type_template_id_c19ac878___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (true) {\n  var api = __webpack_require__(/*! ./node_modules/vue-hot-reload-api/dist/index.js */ \"./node_modules/vue-hot-reload-api/dist/index.js\")\n  api.install(__webpack_require__(/*! vue */ \"./node_modules/vue/dist/vue.esm.js\"))\n  if (api.compatible) {\n    module.hot.accept()\n    if (!module.hot.data) {\n      api.createRecord('c19ac878', component.options)\n    } else {\n      api.reload('c19ac878', component.options)\n    }\n    module.hot.accept(/*! ./CountdownTimer.vue?vue&type=template&id=c19ac878& */ \"./src/components/CountdownTimer.vue?vue&type=template&id=c19ac878&\", function(__WEBPACK_OUTDATED_DEPENDENCIES__) { /* harmony import */ _CountdownTimer_vue_vue_type_template_id_c19ac878___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./CountdownTimer.vue?vue&type=template&id=c19ac878& */ \"./src/components/CountdownTimer.vue?vue&type=template&id=c19ac878&\");\n(function () {\n      api.rerender('c19ac878', {\n        render: _CountdownTimer_vue_vue_type_template_id_c19ac878___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n        staticRenderFns: _CountdownTimer_vue_vue_type_template_id_c19ac878___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"]\n      })\n    })(__WEBPACK_OUTDATED_DEPENDENCIES__); }.bind(this))\n  }\n}\ncomponent.options.__file = \"src/components/CountdownTimer.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/CountdownTimer.vue?");
 
 /***/ }),
 
@@ -1608,7 +2421,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _nod
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _Evolution_vue_vue_type_template_id_635161fb___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Evolution.vue?vue&type=template&id=635161fb& */ \"./src/components/Evolution.vue?vue&type=template&id=635161fb&\");\n/* harmony import */ var _Evolution_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Evolution.vue?vue&type=script&lang=js& */ \"./src/components/Evolution.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _Evolution_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _Evolution_vue_vue_type_template_id_635161fb___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _Evolution_vue_vue_type_template_id_635161fb___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (false) { var api; }\ncomponent.options.__file = \"src/components/Evolution.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/Evolution.vue?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _Evolution_vue_vue_type_template_id_635161fb___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Evolution.vue?vue&type=template&id=635161fb& */ \"./src/components/Evolution.vue?vue&type=template&id=635161fb&\");\n/* harmony import */ var _Evolution_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Evolution.vue?vue&type=script&lang=js& */ \"./src/components/Evolution.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _Evolution_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _Evolution_vue_vue_type_template_id_635161fb___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _Evolution_vue_vue_type_template_id_635161fb___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (true) {\n  var api = __webpack_require__(/*! ./node_modules/vue-hot-reload-api/dist/index.js */ \"./node_modules/vue-hot-reload-api/dist/index.js\")\n  api.install(__webpack_require__(/*! vue */ \"./node_modules/vue/dist/vue.esm.js\"))\n  if (api.compatible) {\n    module.hot.accept()\n    if (!module.hot.data) {\n      api.createRecord('635161fb', component.options)\n    } else {\n      api.reload('635161fb', component.options)\n    }\n    module.hot.accept(/*! ./Evolution.vue?vue&type=template&id=635161fb& */ \"./src/components/Evolution.vue?vue&type=template&id=635161fb&\", function(__WEBPACK_OUTDATED_DEPENDENCIES__) { /* harmony import */ _Evolution_vue_vue_type_template_id_635161fb___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Evolution.vue?vue&type=template&id=635161fb& */ \"./src/components/Evolution.vue?vue&type=template&id=635161fb&\");\n(function () {\n      api.rerender('635161fb', {\n        render: _Evolution_vue_vue_type_template_id_635161fb___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n        staticRenderFns: _Evolution_vue_vue_type_template_id_635161fb___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"]\n      })\n    })(__WEBPACK_OUTDATED_DEPENDENCIES__); }.bind(this))\n  }\n}\ncomponent.options.__file = \"src/components/Evolution.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/Evolution.vue?");
 
 /***/ }),
 
@@ -1644,7 +2457,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _nod
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _EvolutionItem_vue_vue_type_template_id_27b7162e___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./EvolutionItem.vue?vue&type=template&id=27b7162e& */ \"./src/components/EvolutionItem.vue?vue&type=template&id=27b7162e&\");\n/* harmony import */ var _EvolutionItem_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./EvolutionItem.vue?vue&type=script&lang=js& */ \"./src/components/EvolutionItem.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _EvolutionItem_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _EvolutionItem_vue_vue_type_template_id_27b7162e___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _EvolutionItem_vue_vue_type_template_id_27b7162e___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (false) { var api; }\ncomponent.options.__file = \"src/components/EvolutionItem.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/EvolutionItem.vue?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _EvolutionItem_vue_vue_type_template_id_27b7162e___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./EvolutionItem.vue?vue&type=template&id=27b7162e& */ \"./src/components/EvolutionItem.vue?vue&type=template&id=27b7162e&\");\n/* harmony import */ var _EvolutionItem_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./EvolutionItem.vue?vue&type=script&lang=js& */ \"./src/components/EvolutionItem.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _EvolutionItem_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _EvolutionItem_vue_vue_type_template_id_27b7162e___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _EvolutionItem_vue_vue_type_template_id_27b7162e___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (true) {\n  var api = __webpack_require__(/*! ./node_modules/vue-hot-reload-api/dist/index.js */ \"./node_modules/vue-hot-reload-api/dist/index.js\")\n  api.install(__webpack_require__(/*! vue */ \"./node_modules/vue/dist/vue.esm.js\"))\n  if (api.compatible) {\n    module.hot.accept()\n    if (!module.hot.data) {\n      api.createRecord('27b7162e', component.options)\n    } else {\n      api.reload('27b7162e', component.options)\n    }\n    module.hot.accept(/*! ./EvolutionItem.vue?vue&type=template&id=27b7162e& */ \"./src/components/EvolutionItem.vue?vue&type=template&id=27b7162e&\", function(__WEBPACK_OUTDATED_DEPENDENCIES__) { /* harmony import */ _EvolutionItem_vue_vue_type_template_id_27b7162e___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./EvolutionItem.vue?vue&type=template&id=27b7162e& */ \"./src/components/EvolutionItem.vue?vue&type=template&id=27b7162e&\");\n(function () {\n      api.rerender('27b7162e', {\n        render: _EvolutionItem_vue_vue_type_template_id_27b7162e___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n        staticRenderFns: _EvolutionItem_vue_vue_type_template_id_27b7162e___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"]\n      })\n    })(__WEBPACK_OUTDATED_DEPENDENCIES__); }.bind(this))\n  }\n}\ncomponent.options.__file = \"src/components/EvolutionItem.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/EvolutionItem.vue?");
 
 /***/ }),
 
@@ -1680,7 +2493,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _nod
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _FooterComponent_vue_vue_type_template_id_1d6d62bc___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./FooterComponent.vue?vue&type=template&id=1d6d62bc& */ \"./src/components/FooterComponent.vue?vue&type=template&id=1d6d62bc&\");\n/* harmony import */ var _FooterComponent_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./FooterComponent.vue?vue&type=script&lang=js& */ \"./src/components/FooterComponent.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _FooterComponent_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _FooterComponent_vue_vue_type_template_id_1d6d62bc___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _FooterComponent_vue_vue_type_template_id_1d6d62bc___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (false) { var api; }\ncomponent.options.__file = \"src/components/FooterComponent.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/FooterComponent.vue?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _FooterComponent_vue_vue_type_template_id_1d6d62bc___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./FooterComponent.vue?vue&type=template&id=1d6d62bc& */ \"./src/components/FooterComponent.vue?vue&type=template&id=1d6d62bc&\");\n/* harmony import */ var _FooterComponent_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./FooterComponent.vue?vue&type=script&lang=js& */ \"./src/components/FooterComponent.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _FooterComponent_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _FooterComponent_vue_vue_type_template_id_1d6d62bc___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _FooterComponent_vue_vue_type_template_id_1d6d62bc___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (true) {\n  var api = __webpack_require__(/*! ./node_modules/vue-hot-reload-api/dist/index.js */ \"./node_modules/vue-hot-reload-api/dist/index.js\")\n  api.install(__webpack_require__(/*! vue */ \"./node_modules/vue/dist/vue.esm.js\"))\n  if (api.compatible) {\n    module.hot.accept()\n    if (!module.hot.data) {\n      api.createRecord('1d6d62bc', component.options)\n    } else {\n      api.reload('1d6d62bc', component.options)\n    }\n    module.hot.accept(/*! ./FooterComponent.vue?vue&type=template&id=1d6d62bc& */ \"./src/components/FooterComponent.vue?vue&type=template&id=1d6d62bc&\", function(__WEBPACK_OUTDATED_DEPENDENCIES__) { /* harmony import */ _FooterComponent_vue_vue_type_template_id_1d6d62bc___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./FooterComponent.vue?vue&type=template&id=1d6d62bc& */ \"./src/components/FooterComponent.vue?vue&type=template&id=1d6d62bc&\");\n(function () {\n      api.rerender('1d6d62bc', {\n        render: _FooterComponent_vue_vue_type_template_id_1d6d62bc___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n        staticRenderFns: _FooterComponent_vue_vue_type_template_id_1d6d62bc___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"]\n      })\n    })(__WEBPACK_OUTDATED_DEPENDENCIES__); }.bind(this))\n  }\n}\ncomponent.options.__file = \"src/components/FooterComponent.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/FooterComponent.vue?");
 
 /***/ }),
 
@@ -1716,7 +2529,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _nod
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _NavigationBar_vue_vue_type_template_id_d1a7e442___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./NavigationBar.vue?vue&type=template&id=d1a7e442& */ \"./src/components/NavigationBar.vue?vue&type=template&id=d1a7e442&\");\n/* harmony import */ var _NavigationBar_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./NavigationBar.vue?vue&type=script&lang=js& */ \"./src/components/NavigationBar.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _NavigationBar_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _NavigationBar_vue_vue_type_template_id_d1a7e442___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _NavigationBar_vue_vue_type_template_id_d1a7e442___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (false) { var api; }\ncomponent.options.__file = \"src/components/NavigationBar.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/NavigationBar.vue?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _NavigationBar_vue_vue_type_template_id_d1a7e442___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./NavigationBar.vue?vue&type=template&id=d1a7e442& */ \"./src/components/NavigationBar.vue?vue&type=template&id=d1a7e442&\");\n/* harmony import */ var _NavigationBar_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./NavigationBar.vue?vue&type=script&lang=js& */ \"./src/components/NavigationBar.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _NavigationBar_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _NavigationBar_vue_vue_type_template_id_d1a7e442___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _NavigationBar_vue_vue_type_template_id_d1a7e442___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (true) {\n  var api = __webpack_require__(/*! ./node_modules/vue-hot-reload-api/dist/index.js */ \"./node_modules/vue-hot-reload-api/dist/index.js\")\n  api.install(__webpack_require__(/*! vue */ \"./node_modules/vue/dist/vue.esm.js\"))\n  if (api.compatible) {\n    module.hot.accept()\n    if (!module.hot.data) {\n      api.createRecord('d1a7e442', component.options)\n    } else {\n      api.reload('d1a7e442', component.options)\n    }\n    module.hot.accept(/*! ./NavigationBar.vue?vue&type=template&id=d1a7e442& */ \"./src/components/NavigationBar.vue?vue&type=template&id=d1a7e442&\", function(__WEBPACK_OUTDATED_DEPENDENCIES__) { /* harmony import */ _NavigationBar_vue_vue_type_template_id_d1a7e442___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./NavigationBar.vue?vue&type=template&id=d1a7e442& */ \"./src/components/NavigationBar.vue?vue&type=template&id=d1a7e442&\");\n(function () {\n      api.rerender('d1a7e442', {\n        render: _NavigationBar_vue_vue_type_template_id_d1a7e442___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n        staticRenderFns: _NavigationBar_vue_vue_type_template_id_d1a7e442___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"]\n      })\n    })(__WEBPACK_OUTDATED_DEPENDENCIES__); }.bind(this))\n  }\n}\ncomponent.options.__file = \"src/components/NavigationBar.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/NavigationBar.vue?");
 
 /***/ }),
 
@@ -1744,6 +2557,42 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _nod
 
 /***/ }),
 
+/***/ "./src/components/RelatedCharacterList.vue":
+/*!*************************************************!*\
+  !*** ./src/components/RelatedCharacterList.vue ***!
+  \*************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _RelatedCharacterList_vue_vue_type_template_id_cbb099a8___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./RelatedCharacterList.vue?vue&type=template&id=cbb099a8& */ \"./src/components/RelatedCharacterList.vue?vue&type=template&id=cbb099a8&\");\n/* harmony import */ var _RelatedCharacterList_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./RelatedCharacterList.vue?vue&type=script&lang=js& */ \"./src/components/RelatedCharacterList.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _RelatedCharacterList_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _RelatedCharacterList_vue_vue_type_template_id_cbb099a8___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _RelatedCharacterList_vue_vue_type_template_id_cbb099a8___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (true) {\n  var api = __webpack_require__(/*! ./node_modules/vue-hot-reload-api/dist/index.js */ \"./node_modules/vue-hot-reload-api/dist/index.js\")\n  api.install(__webpack_require__(/*! vue */ \"./node_modules/vue/dist/vue.esm.js\"))\n  if (api.compatible) {\n    module.hot.accept()\n    if (!module.hot.data) {\n      api.createRecord('cbb099a8', component.options)\n    } else {\n      api.reload('cbb099a8', component.options)\n    }\n    module.hot.accept(/*! ./RelatedCharacterList.vue?vue&type=template&id=cbb099a8& */ \"./src/components/RelatedCharacterList.vue?vue&type=template&id=cbb099a8&\", function(__WEBPACK_OUTDATED_DEPENDENCIES__) { /* harmony import */ _RelatedCharacterList_vue_vue_type_template_id_cbb099a8___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./RelatedCharacterList.vue?vue&type=template&id=cbb099a8& */ \"./src/components/RelatedCharacterList.vue?vue&type=template&id=cbb099a8&\");\n(function () {\n      api.rerender('cbb099a8', {\n        render: _RelatedCharacterList_vue_vue_type_template_id_cbb099a8___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n        staticRenderFns: _RelatedCharacterList_vue_vue_type_template_id_cbb099a8___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"]\n      })\n    })(__WEBPACK_OUTDATED_DEPENDENCIES__); }.bind(this))\n  }\n}\ncomponent.options.__file = \"src/components/RelatedCharacterList.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/RelatedCharacterList.vue?");
+
+/***/ }),
+
+/***/ "./src/components/RelatedCharacterList.vue?vue&type=script&lang=js&":
+/*!**************************************************************************!*\
+  !*** ./src/components/RelatedCharacterList.vue?vue&type=script&lang=js& ***!
+  \**************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _node_modules_babel_loader_lib_index_js_node_modules_vue_loader_lib_index_js_vue_loader_options_RelatedCharacterList_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../node_modules/babel-loader/lib!../../node_modules/vue-loader/lib??vue-loader-options!./RelatedCharacterList.vue?vue&type=script&lang=js& */ \"./node_modules/babel-loader/lib/index.js!./node_modules/vue-loader/lib/index.js?!./src/components/RelatedCharacterList.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport */ /* harmony default export */ __webpack_exports__[\"default\"] = (_node_modules_babel_loader_lib_index_js_node_modules_vue_loader_lib_index_js_vue_loader_options_RelatedCharacterList_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_0__[\"default\"]); \n\n//# sourceURL=webpack:///./src/components/RelatedCharacterList.vue?");
+
+/***/ }),
+
+/***/ "./src/components/RelatedCharacterList.vue?vue&type=template&id=cbb099a8&":
+/*!********************************************************************************!*\
+  !*** ./src/components/RelatedCharacterList.vue?vue&type=template&id=cbb099a8& ***!
+  \********************************************************************************/
+/*! exports provided: render, staticRenderFns */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _node_modules_vue_loader_lib_loaders_templateLoader_js_vue_loader_options_node_modules_vue_loader_lib_index_js_vue_loader_options_RelatedCharacterList_vue_vue_type_template_id_cbb099a8___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!../../node_modules/vue-loader/lib??vue-loader-options!./RelatedCharacterList.vue?vue&type=template&id=cbb099a8& */ \"./node_modules/vue-loader/lib/loaders/templateLoader.js?!./node_modules/vue-loader/lib/index.js?!./src/components/RelatedCharacterList.vue?vue&type=template&id=cbb099a8&\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return _node_modules_vue_loader_lib_loaders_templateLoader_js_vue_loader_options_node_modules_vue_loader_lib_index_js_vue_loader_options_RelatedCharacterList_vue_vue_type_template_id_cbb099a8___WEBPACK_IMPORTED_MODULE_0__[\"render\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"staticRenderFns\", function() { return _node_modules_vue_loader_lib_loaders_templateLoader_js_vue_loader_options_node_modules_vue_loader_lib_index_js_vue_loader_options_RelatedCharacterList_vue_vue_type_template_id_cbb099a8___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"]; });\n\n\n\n//# sourceURL=webpack:///./src/components/RelatedCharacterList.vue?");
+
+/***/ }),
+
 /***/ "./src/components/SearchBar.vue":
 /*!**************************************!*\
   !*** ./src/components/SearchBar.vue ***!
@@ -1752,7 +2601,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _nod
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _SearchBar_vue_vue_type_template_id_0eca37cb___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./SearchBar.vue?vue&type=template&id=0eca37cb& */ \"./src/components/SearchBar.vue?vue&type=template&id=0eca37cb&\");\n/* harmony import */ var _SearchBar_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./SearchBar.vue?vue&type=script&lang=js& */ \"./src/components/SearchBar.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _SearchBar_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _SearchBar_vue_vue_type_template_id_0eca37cb___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _SearchBar_vue_vue_type_template_id_0eca37cb___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (false) { var api; }\ncomponent.options.__file = \"src/components/SearchBar.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/SearchBar.vue?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _SearchBar_vue_vue_type_template_id_0eca37cb___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./SearchBar.vue?vue&type=template&id=0eca37cb& */ \"./src/components/SearchBar.vue?vue&type=template&id=0eca37cb&\");\n/* harmony import */ var _SearchBar_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./SearchBar.vue?vue&type=script&lang=js& */ \"./src/components/SearchBar.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _SearchBar_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _SearchBar_vue_vue_type_template_id_0eca37cb___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _SearchBar_vue_vue_type_template_id_0eca37cb___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (true) {\n  var api = __webpack_require__(/*! ./node_modules/vue-hot-reload-api/dist/index.js */ \"./node_modules/vue-hot-reload-api/dist/index.js\")\n  api.install(__webpack_require__(/*! vue */ \"./node_modules/vue/dist/vue.esm.js\"))\n  if (api.compatible) {\n    module.hot.accept()\n    if (!module.hot.data) {\n      api.createRecord('0eca37cb', component.options)\n    } else {\n      api.reload('0eca37cb', component.options)\n    }\n    module.hot.accept(/*! ./SearchBar.vue?vue&type=template&id=0eca37cb& */ \"./src/components/SearchBar.vue?vue&type=template&id=0eca37cb&\", function(__WEBPACK_OUTDATED_DEPENDENCIES__) { /* harmony import */ _SearchBar_vue_vue_type_template_id_0eca37cb___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./SearchBar.vue?vue&type=template&id=0eca37cb& */ \"./src/components/SearchBar.vue?vue&type=template&id=0eca37cb&\");\n(function () {\n      api.rerender('0eca37cb', {\n        render: _SearchBar_vue_vue_type_template_id_0eca37cb___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n        staticRenderFns: _SearchBar_vue_vue_type_template_id_0eca37cb___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"]\n      })\n    })(__WEBPACK_OUTDATED_DEPENDENCIES__); }.bind(this))\n  }\n}\ncomponent.options.__file = \"src/components/SearchBar.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/SearchBar.vue?");
 
 /***/ }),
 
@@ -1788,7 +2637,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _nod
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _Timeline_vue_vue_type_template_id_7f3aebf1___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Timeline.vue?vue&type=template&id=7f3aebf1& */ \"./src/components/Timeline.vue?vue&type=template&id=7f3aebf1&\");\n/* harmony import */ var _Timeline_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Timeline.vue?vue&type=script&lang=js& */ \"./src/components/Timeline.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _Timeline_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _Timeline_vue_vue_type_template_id_7f3aebf1___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _Timeline_vue_vue_type_template_id_7f3aebf1___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (false) { var api; }\ncomponent.options.__file = \"src/components/Timeline.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/Timeline.vue?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _Timeline_vue_vue_type_template_id_7f3aebf1___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Timeline.vue?vue&type=template&id=7f3aebf1& */ \"./src/components/Timeline.vue?vue&type=template&id=7f3aebf1&\");\n/* harmony import */ var _Timeline_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Timeline.vue?vue&type=script&lang=js& */ \"./src/components/Timeline.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _Timeline_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _Timeline_vue_vue_type_template_id_7f3aebf1___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _Timeline_vue_vue_type_template_id_7f3aebf1___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (true) {\n  var api = __webpack_require__(/*! ./node_modules/vue-hot-reload-api/dist/index.js */ \"./node_modules/vue-hot-reload-api/dist/index.js\")\n  api.install(__webpack_require__(/*! vue */ \"./node_modules/vue/dist/vue.esm.js\"))\n  if (api.compatible) {\n    module.hot.accept()\n    if (!module.hot.data) {\n      api.createRecord('7f3aebf1', component.options)\n    } else {\n      api.reload('7f3aebf1', component.options)\n    }\n    module.hot.accept(/*! ./Timeline.vue?vue&type=template&id=7f3aebf1& */ \"./src/components/Timeline.vue?vue&type=template&id=7f3aebf1&\", function(__WEBPACK_OUTDATED_DEPENDENCIES__) { /* harmony import */ _Timeline_vue_vue_type_template_id_7f3aebf1___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Timeline.vue?vue&type=template&id=7f3aebf1& */ \"./src/components/Timeline.vue?vue&type=template&id=7f3aebf1&\");\n(function () {\n      api.rerender('7f3aebf1', {\n        render: _Timeline_vue_vue_type_template_id_7f3aebf1___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n        staticRenderFns: _Timeline_vue_vue_type_template_id_7f3aebf1___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"]\n      })\n    })(__WEBPACK_OUTDATED_DEPENDENCIES__); }.bind(this))\n  }\n}\ncomponent.options.__file = \"src/components/Timeline.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/Timeline.vue?");
 
 /***/ }),
 
@@ -1824,7 +2673,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _nod
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _TimelineItem_vue_vue_type_template_id_818295b8___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./TimelineItem.vue?vue&type=template&id=818295b8& */ \"./src/components/TimelineItem.vue?vue&type=template&id=818295b8&\");\n/* harmony import */ var _TimelineItem_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./TimelineItem.vue?vue&type=script&lang=js& */ \"./src/components/TimelineItem.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _TimelineItem_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _TimelineItem_vue_vue_type_template_id_818295b8___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _TimelineItem_vue_vue_type_template_id_818295b8___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (false) { var api; }\ncomponent.options.__file = \"src/components/TimelineItem.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/TimelineItem.vue?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _TimelineItem_vue_vue_type_template_id_818295b8___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./TimelineItem.vue?vue&type=template&id=818295b8& */ \"./src/components/TimelineItem.vue?vue&type=template&id=818295b8&\");\n/* harmony import */ var _TimelineItem_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./TimelineItem.vue?vue&type=script&lang=js& */ \"./src/components/TimelineItem.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _TimelineItem_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _TimelineItem_vue_vue_type_template_id_818295b8___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _TimelineItem_vue_vue_type_template_id_818295b8___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (true) {\n  var api = __webpack_require__(/*! ./node_modules/vue-hot-reload-api/dist/index.js */ \"./node_modules/vue-hot-reload-api/dist/index.js\")\n  api.install(__webpack_require__(/*! vue */ \"./node_modules/vue/dist/vue.esm.js\"))\n  if (api.compatible) {\n    module.hot.accept()\n    if (!module.hot.data) {\n      api.createRecord('818295b8', component.options)\n    } else {\n      api.reload('818295b8', component.options)\n    }\n    module.hot.accept(/*! ./TimelineItem.vue?vue&type=template&id=818295b8& */ \"./src/components/TimelineItem.vue?vue&type=template&id=818295b8&\", function(__WEBPACK_OUTDATED_DEPENDENCIES__) { /* harmony import */ _TimelineItem_vue_vue_type_template_id_818295b8___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./TimelineItem.vue?vue&type=template&id=818295b8& */ \"./src/components/TimelineItem.vue?vue&type=template&id=818295b8&\");\n(function () {\n      api.rerender('818295b8', {\n        render: _TimelineItem_vue_vue_type_template_id_818295b8___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n        staticRenderFns: _TimelineItem_vue_vue_type_template_id_818295b8___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"]\n      })\n    })(__WEBPACK_OUTDATED_DEPENDENCIES__); }.bind(this))\n  }\n}\ncomponent.options.__file = \"src/components/TimelineItem.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/TimelineItem.vue?");
 
 /***/ }),
 
@@ -1860,7 +2709,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _nod
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _TrailerModal_vue_vue_type_template_id_8e27b72c___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./TrailerModal.vue?vue&type=template&id=8e27b72c& */ \"./src/components/TrailerModal.vue?vue&type=template&id=8e27b72c&\");\n/* harmony import */ var _TrailerModal_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./TrailerModal.vue?vue&type=script&lang=js& */ \"./src/components/TrailerModal.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _TrailerModal_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _TrailerModal_vue_vue_type_template_id_8e27b72c___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _TrailerModal_vue_vue_type_template_id_8e27b72c___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (false) { var api; }\ncomponent.options.__file = \"src/components/TrailerModal.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/TrailerModal.vue?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _TrailerModal_vue_vue_type_template_id_8e27b72c___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./TrailerModal.vue?vue&type=template&id=8e27b72c& */ \"./src/components/TrailerModal.vue?vue&type=template&id=8e27b72c&\");\n/* harmony import */ var _TrailerModal_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./TrailerModal.vue?vue&type=script&lang=js& */ \"./src/components/TrailerModal.vue?vue&type=script&lang=js&\");\n/* empty/unused harmony star reexport *//* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ \"./node_modules/vue-loader/lib/runtime/componentNormalizer.js\");\n\n\n\n\n\n/* normalize component */\n\nvar component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_2__[\"default\"])(\n  _TrailerModal_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n  _TrailerModal_vue_vue_type_template_id_8e27b72c___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n  _TrailerModal_vue_vue_type_template_id_8e27b72c___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"],\n  false,\n  null,\n  null,\n  null\n  \n)\n\n/* hot reload */\nif (true) {\n  var api = __webpack_require__(/*! ./node_modules/vue-hot-reload-api/dist/index.js */ \"./node_modules/vue-hot-reload-api/dist/index.js\")\n  api.install(__webpack_require__(/*! vue */ \"./node_modules/vue/dist/vue.esm.js\"))\n  if (api.compatible) {\n    module.hot.accept()\n    if (!module.hot.data) {\n      api.createRecord('8e27b72c', component.options)\n    } else {\n      api.reload('8e27b72c', component.options)\n    }\n    module.hot.accept(/*! ./TrailerModal.vue?vue&type=template&id=8e27b72c& */ \"./src/components/TrailerModal.vue?vue&type=template&id=8e27b72c&\", function(__WEBPACK_OUTDATED_DEPENDENCIES__) { /* harmony import */ _TrailerModal_vue_vue_type_template_id_8e27b72c___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./TrailerModal.vue?vue&type=template&id=8e27b72c& */ \"./src/components/TrailerModal.vue?vue&type=template&id=8e27b72c&\");\n(function () {\n      api.rerender('8e27b72c', {\n        render: _TrailerModal_vue_vue_type_template_id_8e27b72c___WEBPACK_IMPORTED_MODULE_0__[\"render\"],\n        staticRenderFns: _TrailerModal_vue_vue_type_template_id_8e27b72c___WEBPACK_IMPORTED_MODULE_0__[\"staticRenderFns\"]\n      })\n    })(__WEBPACK_OUTDATED_DEPENDENCIES__); }.bind(this))\n  }\n}\ncomponent.options.__file = \"src/components/TrailerModal.vue\"\n/* harmony default export */ __webpack_exports__[\"default\"] = (component.exports);\n\n//# sourceURL=webpack:///./src/components/TrailerModal.vue?");
 
 /***/ }),
 
@@ -1900,6 +2749,17 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony default export */ 
 
 /***/ }),
 
+/***/ "./src/data/characters.json":
+/*!**********************************!*\
+  !*** ./src/data/characters.json ***!
+  \**********************************/
+/*! exports provided: name, characterList, default */
+/***/ (function(module) {
+
+eval("module.exports = {\"name\":\"Character List\",\"characterList\":[{\"id\":1,\"name\":\"Iron Man\",\"alias\":\"Tony Stark\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"iron-man-1-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"iron-man-1-cb.jpg\"}}},{\"id\":2,\"name\":\"Thor\",\"alias\":\"Thor Odinson\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"thor-1-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"thor-1-cb.jpg\"}}},{\"id\":3,\"name\":\"Captain America\",\"alias\":\"Steve Rodgers\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"captain-america-1-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"captain-america-1-cb.jpg\"}}},{\"id\":4,\"name\":\"Hulk\",\"alias\":\"Bruce Banner\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"hulk-1-ca.png\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"hulk-1-cb.jpg\"}}},{\"id\":5,\"name\":\"Hawkeye\",\"alias\":\"Clint Barton\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"hawkeye-1-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"hawkeye-1-cb.jpg\"}}},{\"id\":6,\"name\":\"Black Widow\",\"alias\":\"Natalia Romanoff\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"black-widow-1-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"black-widow-1-cb.jpg\"}}},{\"id\":7,\"name\":\"Loki\",\"alias\":\"Loki Odinson\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"loki-1-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"loki-1-cb.jpg\"}}},{\"id\":8,\"name\":\"Star-Lord\",\"alias\":\"Peter Quill\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"star-lord-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"star-lord-cb.jpg\"}}},{\"id\":9,\"name\":\"Spider-Man\",\"alias\":\"Peter Parker\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"spider-man-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"spider-man-cb.jpg\"}}},{\"id\":10,\"name\":\"Ant-Man\",\"alias\":\"Scott Lang\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"ant-man-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"ant-man-cb.jpg\"}}},{\"id\":11,\"name\":\"Vision\",\"alias\":\"\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"vision-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"vision-cb.jpg\"}}},{\"id\":12,\"name\":\"Scarlet Witch\",\"alias\":\"Wanda Maxinoff\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"scarlet-witch-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"scarlet-witch-cb.jpg\"}}},{\"id\":13,\"name\":\"Black Panther\",\"alias\":\"T'Challa\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"black-panther-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"black-panther-cb.png\"}}},{\"id\":14,\"name\":\"Captain Marvel\",\"alias\":\"Carol Danvers\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"cpt-marvel-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"cpt-marvel-cb.jpg\"}}},{\"id\":15,\"name\":\"Thanos\",\"alias\":\"\",\"comparison\":{\"film\":{\"caption\":\"\",\"imageUrl\":\"thanos-ca.jpg\"},\"comic\":{\"caption\":\"\",\"imageUrl\":\"thanos-cb.jpg\"}}}]};\n\n//# sourceURL=webpack:///./src/data/characters.json?");
+
+/***/ }),
+
 /***/ "./src/data/movies.js":
 /*!****************************!*\
   !*** ./src/data/movies.js ***!
@@ -1908,7 +2768,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony default export */ 
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony default export */ __webpack_exports__[\"default\"] = ({\n  name: 'Movies List',\n  movieList: [{\n    id: 1,\n    name: 'Iron Man',\n    releaseDate: 'May 2, 2008',\n    trailerUrl: 'https://www.youtube.com/watch?v=tbMG2yTDXSY',\n    poster: 'iron-man-1.jpg',\n    characterID: [1]\n  }, {\n    id: 2,\n    name: 'The Incredible Hulk',\n    releaseDate: 'June 13, 2008',\n    trailerUrl: 'https://youtu.be/xbqNb2PFKKA',\n    poster: 'hulk-1.jpg',\n    characterID: [1, 4]\n  }, {\n    id: 3,\n    name: 'Iron Man 2',\n    releaseDate: 'May 7, 2010',\n    trailerUrl: 'https://youtu.be/DIfgxIv5xmk',\n    poster: 'iron-man-2.jpg',\n    characterID: [1, 6]\n  }, {\n    id: 4,\n    name: 'Thor',\n    releaseDate: 'May 6, 2011',\n    trailerUrl: 'https://youtu.be/JOddp-nlNvQ',\n    poster: 'thor-1.jpg',\n    characterID: [2, 5, 7]\n  }, {\n    id: 5,\n    name: 'Captain America: The First Avenger',\n    releaseDate: 'July 19, 2011',\n    trailerUrl: 'https://www.youtube.com/watch?v=JerVrbLldXw',\n    poster: 'captain-america-1.jpg',\n    characterID: [3]\n  }, {\n    id: 6,\n    name: 'Marvel\\'s The Avengers',\n    releaseDate: 'May 4, 2012',\n    trailerUrl: 'https://www.youtube.com/watch?v=eOrNdBpGMv8',\n    poster: 'avengers-1.jpg',\n    characterID: [1, 2, 3, 4, 5, 6, 7]\n  }, {\n    id: 7,\n    name: 'Iron Man 3',\n    releaseDate: 'May 3, 2013',\n    trailerUrl: 'https://youtu.be/YLorLVa95Xo',\n    poster: 'iron-man-3.jpg',\n    characterID: [1]\n  }, {\n    id: 8,\n    name: 'Thor: The Dark World',\n    releaseDate: 'November 8, 2013',\n    trailerUrl: 'https://www.youtube.com/watch?v=npvJ9FTgZbM',\n    poster: 'thor-2.jpg',\n    characterID: [2, 7]\n  }, {\n    id: 9,\n    name: 'Captain America: The Winter Soldier',\n    releaseDate: 'April 4, 2014',\n    trailerUrl: 'https://www.youtube.com/watch?v=tbayiPxkUMM',\n    poster: 'captain-america-2.jpg',\n    characterID: [3, 6]\n  }, {\n    id: 10,\n    name: 'Guardians of the Galaxy',\n    releaseDate: 'August 1, 2014',\n    trailerUrl: 'https://youtu.be/d96cjJhvlMA',\n    poster: 'guardians-1.jpg',\n    characterID: [8]\n  }, {\n    id: 11,\n    name: 'Avengers: Age of Ultron',\n    releaseDate: 'May 1, 2015',\n    trailerUrl: 'https://youtu.be/tmeOjFno6Do',\n    poster: 'avengers-2.jpg',\n    characterID: [1, 2, 3, 4, 5, 6, 11]\n  }, {\n    id: 12,\n    name: 'Ant-Man',\n    releaseDate: 'June 29, 2015',\n    trailerUrl: 'https://youtu.be/pWdKf3MneyI',\n    poster: 'antman-1.jpg',\n    characterID: [10]\n  }, {\n    id: 13,\n    name: 'Captain America: Civil War',\n    releaseDate: 'May 6, 2016',\n    trailerUrl: 'https://youtu.be/dKrVegVI0Us',\n    poster: 'captain-america-3.jpg',\n    characterID: [1, 3, 5, 6, 9, 10, 11, 12]\n  }, {\n    id: 14,\n    name: 'Doctor Strange',\n    releaseDate: 'October 20, 2016',\n    trailerUrl: 'https://youtu.be/HSzx-zryEgM',\n    poster: 'doctor-strange-1.jpg',\n    characterID: [2]\n  }, {\n    id: 15,\n    name: 'Guardians of the Galaxy Vol. 2',\n    releaseDate: 'May 5, 2017',\n    trailerUrl: 'https://youtu.be/dW1BIid8Osg',\n    poster: 'guardians-2.jpg',\n    characterID: [8]\n  }, {\n    id: 16,\n    name: 'Spider-Man: Homecoming',\n    releaseDate: 'July 7, 2017',\n    trailerUrl: 'https://youtu.be/8wNgphPi5VM',\n    poster: 'spiderman-1.jpg',\n    characterID: [1, 9]\n  }, {\n    id: 17,\n    name: 'Thor: Ragnarok',\n    releaseDate: 'November 3, 2017',\n    trailerUrl: 'https://youtu.be/ue80QwXMRHg',\n    poster: 'thor-3.jpg',\n    characterID: [2, 4, 7]\n  }, {\n    id: 18,\n    name: 'Black Panther',\n    releaseDate: 'February 16, 2017',\n    trailerUrl: 'https://youtu.be/xjDjIWPwcPU',\n    poster: 'black-panther-1.jpg',\n    characterID: [13]\n  }, {\n    id: 19,\n    name: 'Avengers: Infinity War',\n    releaseDate: 'April 27, 2018',\n    trailerUrl: 'https://youtu.be/mBeOUjf-NLA',\n    poster: 'avengers-3.jpg',\n    characterID: [1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 15]\n  }, {\n    id: 20,\n    name: 'Ant-Man and the Wasp',\n    releaseDate: 'July 6, 2018',\n    trailerUrl: 'https://youtu.be/8_rTIAOohas',\n    poster: 'antman-2.jpg',\n    characterID: [10]\n  }, {\n    id: 21,\n    name: 'Captain Marvel',\n    releaseDate: 'March 8, 2019',\n    trailerUrl: 'https://youtu.be/0LHxvxdRnYc',\n    poster: 'cpt-marvel.jpg',\n    logo: 'cpt-marvel-logo.png',\n    wallpaper: 'cpt-marvel-wp.jpg',\n    characterID: [14]\n  }, {\n    id: 22,\n    name: 'Avengers: Endgame',\n    releaseDate: 'April 27, 2019',\n    trailerUrl: 'https://www.youtube.com/watch?v=TcMBFSGVi1c',\n    poster: 'avengers-4-wp.jpg',\n    logo: 'avengers-4-logo.png',\n    wallpaper: 'avengers-4-wp.jpg',\n    characterID: [1, 2, 3, 4, 5, 6, 10, 15]\n  }, {\n    id: 23,\n    name: 'Spider-Man: Far From Home',\n    releaseDate: 'July 5, 2019',\n    trailerUrl: 'https://www.youtube.com/watch?v=DYYtuKyMtY8',\n    poster: 'spiderman-2-wp.jpg',\n    logo: 'spiderman-2-logo.png',\n    wallpaper: 'spiderman-2-wp.jpg',\n    characterID: [9]\n  }],\n  featuredFilm: {\n    id: 22,\n    tickets_url: \"https://www.fandango.com/avengers-endgame-215871/movie-overview\"\n  },\n  otherFeatured: {\n    id: 23,\n    tickets_url: \"\"\n  }\n});\n\n//# sourceURL=webpack:///./src/data/movies.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony default export */ __webpack_exports__[\"default\"] = ({\n  name: 'Movies List',\n  movieList: [{\n    id: 1,\n    name: 'Iron Man',\n    releaseDate: 'May 2, 2008',\n    trailerUrl: 'https://www.youtube.com/watch?v=tbMG2yTDXSY',\n    poster: 'iron-man-1.jpg',\n    characterID: [1]\n  }, {\n    id: 2,\n    name: 'The Incredible Hulk',\n    releaseDate: 'June 13, 2008',\n    trailerUrl: 'https://youtu.be/xbqNb2PFKKA',\n    poster: 'hulk-1.jpg',\n    characterID: [1, 4]\n  }, {\n    id: 3,\n    name: 'Iron Man 2',\n    releaseDate: 'May 7, 2010',\n    trailerUrl: 'https://youtu.be/DIfgxIv5xmk',\n    poster: 'iron-man-2.jpg',\n    characterID: [1, 6]\n  }, {\n    id: 4,\n    name: 'Thor',\n    releaseDate: 'May 6, 2011',\n    trailerUrl: 'https://youtu.be/JOddp-nlNvQ',\n    poster: 'thor-1.jpg',\n    characterID: [2, 5, 7]\n  }, {\n    id: 5,\n    name: 'Captain America: The First Avenger',\n    releaseDate: 'July 19, 2011',\n    trailerUrl: 'https://www.youtube.com/watch?v=JerVrbLldXw',\n    poster: 'captain-america-1.jpg',\n    characterID: [3]\n  }, {\n    id: 6,\n    name: 'Marvel\\'s The Avengers',\n    releaseDate: 'May 4, 2012',\n    trailerUrl: 'https://www.youtube.com/watch?v=eOrNdBpGMv8',\n    poster: 'avengers-1.jpg',\n    characterID: [1, 2, 3, 4, 5, 6, 7]\n  }, {\n    id: 7,\n    name: 'Iron Man 3',\n    releaseDate: 'May 3, 2013',\n    trailerUrl: 'https://youtu.be/YLorLVa95Xo',\n    poster: 'iron-man-3.jpg',\n    characterID: [1]\n  }, {\n    id: 8,\n    name: 'Thor: The Dark World',\n    releaseDate: 'November 8, 2013',\n    trailerUrl: 'https://www.youtube.com/watch?v=npvJ9FTgZbM',\n    poster: 'thor-2.jpg',\n    characterID: [2, 7]\n  }, {\n    id: 9,\n    name: 'Captain America: The Winter Soldier',\n    releaseDate: 'April 4, 2014',\n    trailerUrl: 'https://www.youtube.com/watch?v=tbayiPxkUMM',\n    poster: 'captain-america-2.jpg',\n    characterID: [3, 6]\n  }, {\n    id: 10,\n    name: 'Guardians of the Galaxy',\n    releaseDate: 'August 1, 2014',\n    trailerUrl: 'https://youtu.be/d96cjJhvlMA',\n    poster: 'guardians-1.jpg',\n    characterID: [8]\n  }, {\n    id: 11,\n    name: 'Avengers: Age of Ultron',\n    releaseDate: 'May 1, 2015',\n    trailerUrl: 'https://youtu.be/tmeOjFno6Do',\n    poster: 'avengers-2.jpg',\n    characterID: [1, 2, 3, 4, 5, 6, 11]\n  }, {\n    id: 12,\n    name: 'Ant-Man',\n    releaseDate: 'June 29, 2015',\n    trailerUrl: 'https://youtu.be/pWdKf3MneyI',\n    poster: 'antman-1.jpg',\n    characterID: [10]\n  }, {\n    id: 13,\n    name: 'Captain America: Civil War',\n    releaseDate: 'May 6, 2016',\n    trailerUrl: 'https://youtu.be/dKrVegVI0Us',\n    poster: 'captain-america-3.jpg',\n    characterID: [1, 3, 5, 6, 9, 10, 11, 12]\n  }, {\n    id: 14,\n    name: 'Doctor Strange',\n    releaseDate: 'October 20, 2016',\n    trailerUrl: 'https://youtu.be/HSzx-zryEgM',\n    poster: 'doctor-strange-1.jpg',\n    characterID: [2]\n  }, {\n    id: 15,\n    name: 'Guardians of the Galaxy Vol. 2',\n    releaseDate: 'May 5, 2017',\n    trailerUrl: 'https://youtu.be/dW1BIid8Osg',\n    poster: 'guardians-2.jpg',\n    characterID: [8]\n  }, {\n    id: 16,\n    name: 'Spider-Man: Homecoming',\n    releaseDate: 'July 7, 2017',\n    trailerUrl: 'https://youtu.be/8wNgphPi5VM',\n    poster: 'spiderman-1.jpg',\n    characterID: [1, 9]\n  }, {\n    id: 17,\n    name: 'Thor: Ragnarok',\n    releaseDate: 'November 3, 2017',\n    trailerUrl: 'https://youtu.be/ue80QwXMRHg',\n    poster: 'thor-3.jpg',\n    characterID: [2, 4, 7]\n  }, {\n    id: 18,\n    name: 'Black Panther',\n    releaseDate: 'February 16, 2017',\n    trailerUrl: 'https://youtu.be/xjDjIWPwcPU',\n    poster: 'black-panther-1.jpg',\n    characterID: [13]\n  }, {\n    id: 19,\n    name: 'Avengers: Infinity War',\n    releaseDate: 'April 27, 2018',\n    trailerUrl: 'https://youtu.be/mBeOUjf-NLA',\n    poster: 'avengers-3.jpg',\n    characterID: [1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 15]\n  }, {\n    id: 20,\n    name: 'Ant-Man and the Wasp',\n    releaseDate: 'July 6, 2018',\n    trailerUrl: 'https://youtu.be/8_rTIAOohas',\n    poster: 'antman-2.jpg',\n    characterID: [10]\n  }, {\n    id: 21,\n    name: 'Captain Marvel',\n    releaseDate: 'March 8, 2019',\n    trailerUrl: 'https://youtu.be/0LHxvxdRnYc',\n    poster: 'cpt-marvel.jpg',\n    logo: 'cpt-marvel-logo.png',\n    wallpaper: 'cpt-marvel-wp.jpg',\n    characterID: [14]\n  }, {\n    id: 22,\n    name: 'Avengers: Endgame',\n    releaseDate: 'April 27, 2019',\n    trailerUrl: 'https://www.youtube.com/watch?v=TcMBFSGVi1c',\n    poster: 'avengers-4-wp.jpg',\n    logo: 'avengers-4-logo.png',\n    wallpaper: 'avengers-4-wp.jpg',\n    characterID: [1, 2, 3, 4, 5, 6, 10, 14, 15]\n  }, {\n    id: 23,\n    name: 'Spider-Man: Far From Home',\n    releaseDate: 'July 5, 2019',\n    trailerUrl: 'https://www.youtube.com/watch?v=DYYtuKyMtY8',\n    poster: 'spiderman-2-wp.jpg',\n    logo: 'spiderman-2-logo.png',\n    wallpaper: 'spiderman-2-wp.jpg',\n    characterID: [9]\n  }],\n  featuredFilm: {\n    id: 22,\n    tickets_url: \"https://www.fandango.com/avengers-endgame-215871/movie-overview\",\n    shadow_color: \"#3e1bb3\"\n  },\n  otherFeatured: {\n    id: 23,\n    tickets_url: \"\",\n    shadow_color: \"crimson\"\n  }\n});\n\n//# sourceURL=webpack:///./src/data/movies.js?");
 
 /***/ }),
 
@@ -1916,11 +2776,11 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony default export */ 
 /*!****************************!*\
   !*** ./src/lib/helpers.js ***!
   \****************************/
-/*! exports provided: getImageWithLocalPath, renderComponentIfElementExists */
+/*! exports provided: renderTrailer, getImageWithLocalPath, renderComponentIfElementExists */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"getImageWithLocalPath\", function() { return getImageWithLocalPath; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"renderComponentIfElementExists\", function() { return renderComponentIfElementExists; });\n/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ \"./node_modules/vue/dist/vue.esm.js\");\n/* harmony import */ var _Store_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./../Store.js */ \"./src/Store.js\");\n\n\n\nvar getImageWithLocalPath = function getImageWithLocalPath(image_filename, sub_folder) {\n  if (typeof sub_folder === \"undefined\") {\n    return __webpack_require__(\"./src/assets/images sync recursive ^\\\\.\\\\/.*$\")(\"./\" + image_filename);\n  }\n\n  return __webpack_require__(\"./src/assets/images sync recursive ^\\\\.\\\\/.*$\")(\"./\" + sub_folder + image_filename);\n};\n/* \n*\n* Helper function. Renders component if the container element exists.\n* \n* @param `el_id` String HTML Element ID where component will\n* be rendered.\n*\n* @param `el_component` Object Vue Component to render.\n*\n*/\n\n\nvar renderComponentIfElementExists = function renderComponentIfElementExists(el_id, el_component) {\n  if (!document.getElementById(el_id)) {\n    return;\n  }\n\n  new vue__WEBPACK_IMPORTED_MODULE_0__[\"default\"]({\n    el: '#' + el_id,\n    store: _Store_js__WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n    render: function render(h) {\n      return h(el_component);\n    }\n  });\n};\n\n\n\n//# sourceURL=webpack:///./src/lib/helpers.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"renderTrailer\", function() { return renderTrailer; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"getImageWithLocalPath\", function() { return getImageWithLocalPath; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"renderComponentIfElementExists\", function() { return renderComponentIfElementExists; });\n/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ \"./node_modules/vue/dist/vue.esm.js\");\n/* harmony import */ var _Store_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./../Store.js */ \"./src/Store.js\");\n/* harmony import */ var _components_TrailerModal_vue__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./../components/TrailerModal.vue */ \"./src/components/TrailerModal.vue\");\n\n\n\n\nvar renderTrailer = function renderTrailer(vid) {\n  var temp = vue__WEBPACK_IMPORTED_MODULE_0__[\"default\"].extend({\n    template: '<TrailerModal :selectedMovie = \"movie\" />',\n    data: function data() {\n      return {\n        movie: vid\n      };\n    },\n    components: {\n      TrailerModal: _components_TrailerModal_vue__WEBPACK_IMPORTED_MODULE_2__[\"default\"]\n    }\n  });\n  var component = new temp().$mount();\n  document.body.appendChild(component.$el);\n};\n\nvar getImageWithLocalPath = function getImageWithLocalPath(image_filename, sub_folder) {\n  if (typeof sub_folder === \"undefined\") {\n    return __webpack_require__(\"./src/assets/images sync recursive ^\\\\.\\\\/.*$\")(\"./\" + image_filename);\n  }\n\n  return __webpack_require__(\"./src/assets/images sync recursive ^\\\\.\\\\/.*$\")(\"./\" + sub_folder + image_filename);\n};\n/* \n*\n* Helper function. Renders component if the container element exists.\n* \n* @param `el_id` String HTML Element ID where component will\n* be rendered.\n*\n* @param `el_component` Object Vue Component to render.\n*\n*/\n\n\nvar renderComponentIfElementExists = function renderComponentIfElementExists(el_id, el_component) {\n  if (!document.getElementById(el_id)) {\n    return;\n  }\n\n  return new vue__WEBPACK_IMPORTED_MODULE_0__[\"default\"]({\n    el: '#' + el_id,\n    store: _Store_js__WEBPACK_IMPORTED_MODULE_1__[\"default\"],\n    render: function render(h) {\n      return h(el_component);\n    }\n  });\n};\n\n\n\n//# sourceURL=webpack:///./src/lib/helpers.js?");
 
 /***/ }),
 
@@ -1932,7 +2792,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) *
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ \"./node_modules/vue/dist/vue.esm.js\");\n/* harmony import */ var vuex__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! vuex */ \"./node_modules/vuex/dist/vuex.esm.js\");\n/* harmony import */ var vue_scrollto__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! vue-scrollto */ \"./node_modules/vue-scrollto/vue-scrollto.js\");\n/* harmony import */ var vue_scrollto__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(vue_scrollto__WEBPACK_IMPORTED_MODULE_2__);\n/* harmony import */ var _components_NavigationBar_vue__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./components/NavigationBar.vue */ \"./src/components/NavigationBar.vue\");\n/* harmony import */ var _App_vue__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./App.vue */ \"./src/App.vue\");\n/* harmony import */ var _components_Comparison_vue__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./components/Comparison.vue */ \"./src/components/Comparison.vue\");\n/* harmony import */ var _components_Evolution_vue__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./components/Evolution.vue */ \"./src/components/Evolution.vue\");\n/* harmony import */ var _components_FooterComponent_vue__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./components/FooterComponent.vue */ \"./src/components/FooterComponent.vue\");\n/* harmony import */ var _lib_helpers_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./lib/helpers.js */ \"./src/lib/helpers.js\");\n/* harmony import */ var _Store_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./Store.js */ \"./src/Store.js\");\n\n\n\n\n\n\n\n\n\n\nvue__WEBPACK_IMPORTED_MODULE_0__[\"default\"].use(vue_scrollto__WEBPACK_IMPORTED_MODULE_2___default.a);\n\nif (document.getElementById('app-home')) {\n  new vue__WEBPACK_IMPORTED_MODULE_0__[\"default\"]({\n    el: '#app-home',\n    store: _Store_js__WEBPACK_IMPORTED_MODULE_9__[\"store\"],\n    render: function render(h) {\n      return h(_App_vue__WEBPACK_IMPORTED_MODULE_4__[\"default\"]);\n    }\n  });\n}\n\nif (document.getElementById('app-comparison')) {\n  new vue__WEBPACK_IMPORTED_MODULE_0__[\"default\"]({\n    el: '#app-comparison',\n    store: _Store_js__WEBPACK_IMPORTED_MODULE_9__[\"store\"],\n    render: function render(h) {\n      return h(_components_Comparison_vue__WEBPACK_IMPORTED_MODULE_5__[\"default\"]);\n    }\n  });\n}\n\nObject(_lib_helpers_js__WEBPACK_IMPORTED_MODULE_8__[\"renderComponentIfElementExists\"])('app-nav', _components_NavigationBar_vue__WEBPACK_IMPORTED_MODULE_3__[\"default\"]);\nObject(_lib_helpers_js__WEBPACK_IMPORTED_MODULE_8__[\"renderComponentIfElementExists\"])('app-evolution', _components_Evolution_vue__WEBPACK_IMPORTED_MODULE_6__[\"default\"]);\nObject(_lib_helpers_js__WEBPACK_IMPORTED_MODULE_8__[\"renderComponentIfElementExists\"])('app-footer', _components_FooterComponent_vue__WEBPACK_IMPORTED_MODULE_7__[\"default\"]);\n\n//# sourceURL=webpack:///./src/main.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ \"./node_modules/vue/dist/vue.esm.js\");\n/* harmony import */ var vuex__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! vuex */ \"./node_modules/vuex/dist/vuex.esm.js\");\n/* harmony import */ var vue_scrollto__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! vue-scrollto */ \"./node_modules/vue-scrollto/vue-scrollto.js\");\n/* harmony import */ var vue_scrollto__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(vue_scrollto__WEBPACK_IMPORTED_MODULE_2__);\n/* harmony import */ var _components_NavigationBar_vue__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./components/NavigationBar.vue */ \"./src/components/NavigationBar.vue\");\n/* harmony import */ var _App_vue__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./App.vue */ \"./src/App.vue\");\n/* harmony import */ var _components_AllCharactersList_vue__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./components/AllCharactersList.vue */ \"./src/components/AllCharactersList.vue\");\n/* harmony import */ var _components_Comparison_vue__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./components/Comparison.vue */ \"./src/components/Comparison.vue\");\n/* harmony import */ var _components_Evolution_vue__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./components/Evolution.vue */ \"./src/components/Evolution.vue\");\n/* harmony import */ var _components_FooterComponent_vue__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./components/FooterComponent.vue */ \"./src/components/FooterComponent.vue\");\n/* harmony import */ var _lib_helpers_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./lib/helpers.js */ \"./src/lib/helpers.js\");\n\n\n\n\n\n\n\n\n\n\nvue__WEBPACK_IMPORTED_MODULE_0__[\"default\"].use(vue_scrollto__WEBPACK_IMPORTED_MODULE_2___default.a);\nvar APP_ROOTS = [{\n  el: '#app-home',\n  component: _App_vue__WEBPACK_IMPORTED_MODULE_4__[\"default\"]\n}, {\n  el: '#app-compare',\n  component: _components_Comparison_vue__WEBPACK_IMPORTED_MODULE_6__[\"default\"]\n}, {\n  el: '#app-all-characters',\n  component: _components_AllCharactersList_vue__WEBPACK_IMPORTED_MODULE_5__[\"default\"]\n}];\n\nvar renderComponent = function renderComponent(app_el, app_component) {\n  if (document.getElementById(app_el)) {\n    new vue__WEBPACK_IMPORTED_MODULE_0__[\"default\"]({\n      el: '#' + app_el,\n      render: function render(h) {\n        return h(app_component);\n      }\n    });\n  }\n};\n\nif (document.getElementById('app-home')) {\n  new vue__WEBPACK_IMPORTED_MODULE_0__[\"default\"]({\n    el: '#app-home',\n    render: function render(h) {\n      return h(_App_vue__WEBPACK_IMPORTED_MODULE_4__[\"default\"]);\n    }\n  });\n}\n\nObject(_lib_helpers_js__WEBPACK_IMPORTED_MODULE_9__[\"renderComponentIfElementExists\"])('app-comparison', _components_Comparison_vue__WEBPACK_IMPORTED_MODULE_6__[\"default\"]);\nObject(_lib_helpers_js__WEBPACK_IMPORTED_MODULE_9__[\"renderComponentIfElementExists\"])('app-characters-all', _components_AllCharactersList_vue__WEBPACK_IMPORTED_MODULE_5__[\"default\"]);\nObject(_lib_helpers_js__WEBPACK_IMPORTED_MODULE_9__[\"renderComponentIfElementExists\"])('app-nav', _components_NavigationBar_vue__WEBPACK_IMPORTED_MODULE_3__[\"default\"]);\nObject(_lib_helpers_js__WEBPACK_IMPORTED_MODULE_9__[\"renderComponentIfElementExists\"])('app-footer', _components_FooterComponent_vue__WEBPACK_IMPORTED_MODULE_8__[\"default\"]); // Opt-in to Webpack hot module replacement\n\nif (true) module.hot.accept();\n\n//# sourceURL=webpack:///./src/main.js?");
 
 /***/ })
 

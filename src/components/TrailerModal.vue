@@ -1,60 +1,62 @@
 <template>
-	<div v-if = "startPlaying"  id = "trailer-modal-wrapper">
+	<div v-if = "selectedMovie !== null && videoIsPlaying"  id = "trailer-modal-wrapper">
 		<div class="movie-meta">
 			<h2>{{ selectedMovie.name }}</h2>
 				<tr></tr>
 			<h5>{{ selectedMovie.releaseDate }}</h5>
 
-			<img :alt = "selectedMovie.name + ' Poster' " :src = "getImageWithLocalPath(selectedMovie.poster)" />  
+			<img :alt = "selectedMovie.name + ' Poster' " :src = "getFileName(selectedMovie.poster)" />  
 
 			<button class= "hide-player" v-on:click = "hidePlayer()">
-				Return to TimeLine
+				Go Back
 			</button>
 		</div>
 
 		<div class = "iframe-wrapper">
+			
 			<iframe :src = "getTrailerEmbedUrl()" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
 		</div>
 	</div>
 </template>
 
 <script>
-	import { getImageWithLocalPath } from './../lib/helpers.js';
 
 	export default {
 		name: 'trailer-modal',
 
-		/* 
+		/*
 		*
-		* Two properties passed down from parent.
-		*
-		* `selectedMovie` Object the movie who's trailer is being played
-		*
-		* `startPlaying` Boolean determines if player modal should be opened
+		* `selectedMovie` Object - the movie whose trailer is being played
 		*
 		*/
 
-		props: ['selectedMovie', 'startPlaying'],
+		props: ['selectedMovie'],
 
 		data () {
 			return {
 
+				videoIsPlaying: true
+
 			}
+		},
+
+		watch: {
+
+			selectedMovie (newVal, oldVal) {
+
+				this.videoIsPlaying = true;
+
+			}
+
 		},
 
 		methods: {
 
-
 			hidePlayer: function () {
-				if ( this.startPlaying ) {
 
-					this.$emit('hide-player');
+				this.videoIsPlaying = !this.videoIsPlaying;
 
-					return;
-
-				} else {
-					return;
-				}
 			},
 
 			/*
@@ -105,7 +107,14 @@
 				return 'https://youtube.com/embed/' + this.selectedMovie.trailerUrl.slice(trailerStartIndex, trailerEndIndex);
 			},
 
-			getImageWithLocalPath: getImageWithLocalPath
+			getFileName: function (image_filename, sub_folder) {
+
+				if ( typeof sub_folder === "undefined" ) {
+					return require('./../assets/images/' + image_filename);
+				}
+
+				return require('./../assets/images/' + sub_folder + image_filename );
+			}
 
 		}
 	}

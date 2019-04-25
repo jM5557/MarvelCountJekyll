@@ -9,14 +9,17 @@
 	>
 		<slot name = "navbar"></slot>
 
-		<div :class = "(days < 3) ? 'inner-wrapper timer-warning' : 'inner-wrapper'">
-			<img alt = "Latest Film Logo" :src = " '/dist/Assets/' + film.logo " />
+		<div :class = "(days < 3) ? 'inner-wrapper timer-warning' : 'inner-wrapper'"
+		>
+			<img alt = "Latest Film Logo" 
+				:src = " '/dist/Assets/' + film.logo " 
+			/>
 			
 			<a class = "get-tickets-link" 
-			v-if = "(days < 1
-				&& hours < 1
-				&& minutes < 1
-				&& seconds < 1)"
+				v-if = "(days < 1
+					&& hours < 1
+					&& minutes < 1
+					&& seconds < 1)"
 				:href = "ticketsUrl"
 			>
 				Get Tickets Now
@@ -57,8 +60,13 @@
 			</div>
 
 			<button 
-				v-on:click="playTrailer(film, !trailerIsPlaying)" 
+
+				v-on:click="playTrailer(film)"
+
 				class = 'trailer-btn'
+
+				:style=" 'box-shadow: inset 68px 0px 80px -25px ' + shadowColor "
+
 			>
 				Latest Trailer
 			</button>
@@ -129,21 +137,20 @@
 
 <script>
 
-	import TrailerModal from './TrailerModal.vue';
+	import { renderTrailer } from './../lib/helpers.js';
+
 	import NavigationBar from './NavigationBar.vue';
 
 	export default {
 		name: 'countdown-timer',
 
-		props: ['timerIsLarge', 'endDate', 'film', 'ticketsUrl'],
+		props: ['timerIsLarge', 'endDate', 'film', 'ticketsUrl', 'shadowColor'],
 
 		data () {
 			return {
 				currentTime: Math.trunc((new Date()).getTime() / 1000),
 
 				endTime: Math.trunc(Date.parse(this.endDate) / 1000),
-
-				trailerIsPlaying: false,
 
 				getCurrentWebpage: window.location,
 
@@ -153,12 +160,10 @@
 
 		methods: {
 
-			playTrailer: function (film, trailerIsPlaying) {
+			playTrailer: function (film) {
 				
-				this.$emit('set-modal-meta', {
-					selectedMovie: film,
-					trailerIsPlaying: trailerIsPlaying
-				} );
+				renderTrailer(film);
+				
 			},
 
 			getMessageByTimer: function (days, hours, minutes) {
@@ -200,12 +205,13 @@
 
 		mounted: function ()  {
 			window.setInterval(() => {
+
 		        this.currentTime = Math.trunc((new Date()).getTime() / 1000);
+
 		    }, 1000);
 		},
 
 		components: {
-			TrailerModal,
 			NavigationBar
 		}
 	}

@@ -1,10 +1,21 @@
 <template>
 	<div id = "comparison-item-wrapper">
-		<div id = "comparison-item-inner-wrapper">
-			<div id = "comp-a" :style = "'background-image: url(\'' + getFileName(item.comparison.film.imageUrl) + '\');'" class = "comp-item">
-			</div>
+		<div id = "comparison-item-inner-wrapper"
 
-			<div id = "comp-b" :style = "'background-image: url(\'' + getFileName(item.comparison.comic.imageUrl) + '\');'" class = "comp-item">
+			:style = "'background-image: url(\'' + getFileName(selectedImgToDisplay) + '\');'"
+
+		>
+
+			<div class = "toggle-view-wrapper">
+				
+				MCU
+
+				<button v-on:click="toggleViewMode()" 
+						:class = "(viewMode == 'MCU') ? 'toggle-view' : 'toggle-view on' ">
+				</button>
+
+				Comic
+
 			</div>
 		</div>
 
@@ -18,29 +29,81 @@
 				{{ item.alias }}
 			</p>
 
-			<ul>
-				<li v-for = "movie in moviesWithCharacter" class = "movies main-stats">
-					{{ movie.name }}
-				</li>
-			</ul>
+			<div class = "char-content-wrapper right">
+
+				<h2>Appearances</h2>
+
+				<ul class="related-movies">
+					<li 
+						v-for = "movie in moviesWithCharacter" 
+						
+						class = "movies main-stats"
+						
+						v-on:click = "setSelectedMovie(movie)"
+
+
+					>
+						<div
+
+							class = "related-movie-thumb"
+						
+							:style = "'background-image: url(\'' + getFileName(movie.poster) + '\');'"
+
+						>	
+
+						</div>
+
+						<h3>
+							{{ movie.name }}
+						</h3>
+					</li>
+				</ul>
+			</div>
+
+			<RelatedCharacterList 
+				:item = "item" 
+				:handleCharacterClick = "handleCharacterClick" 
+			/>
 
 		</div>
 	</div>
 </template>
 
 <script>
-	import { getImageWithLocalPath } from './../lib/helpers.js';
+	import { getImageWithLocalPath, renderTrailer } from './../lib/helpers.js';
+
 	import MovieList from './../data/movies.js';
+
+	import RelatedCharacterList from './RelatedCharacterList';
+
 
 	export default {
 		name: 'comparison-item',
 		
-		props: [ 'item' ],
+		props: [ 'item', 'handleCharacterClick' ],
 
 		data () {
 			return {
-				movieList: []
+				movieList: [],
+
+				selectedImgToDisplay: this.item.comparison.film.imageUrl,
+
+				viewMode: 'MCU',
+
+				selectedMovie: null
 			}
+		},
+
+		watch: {
+			
+    		item (newValue, oldValue) {
+      			
+    			this.selectedImgToDisplay = newValue.comparison.film.imageUrl;
+
+    			if (this.viewMode !== 'MCU') 
+    				this.viewMode = 'MCU';
+
+    		}
 		},
 
 		computed: {
@@ -68,7 +131,38 @@
 		},
 
 		methods: {
+
+			setSelectedMovie: function (movie) {
+
+				this.selectedMovie = movie; 
+
+				renderTrailer(movie);
+
+			},
+
+
+			toggleViewMode: function () {
+
+				if (this.viewMode === 'MCU') {
+
+					this.viewMode = 'COMIC';
+					this.selectedImgToDisplay = this.item.comparison.comic.imageUrl;
+
+				} else {
+
+
+					this.viewMode = 'MCU';
+					this.selectedImgToDisplay = this.item.comparison.film.imageUrl;
+
+				}
+
+			},
+
 			getFileName: getImageWithLocalPath
+		},
+
+		components: {
+			RelatedCharacterList
 		}
 	}
 </script>

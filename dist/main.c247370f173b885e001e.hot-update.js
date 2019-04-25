@@ -1,0 +1,15 @@
+webpackHotUpdate("main",{
+
+/***/ "./node_modules/vue-loader/lib/loaders/templateLoader.js?!./node_modules/vue-loader/lib/index.js?!./src/components/TrailerModal.vue?vue&type=template&id=8e27b72c&":
+/*!******************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options!./src/components/TrailerModal.vue?vue&type=template&id=8e27b72c& ***!
+  \******************************************************************************************************************************************************************************************************/
+/*! exports provided: render, staticRenderFns */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return render; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"staticRenderFns\", function() { return staticRenderFns; });\nvar render = function() {\n  var _vm = this\n  var _h = _vm.$createElement\n  var _c = _vm._self._c || _h\n  return _vm.selectedMovie !== null && _vm.videoIsPlaying\n    ? _c(\"div\", { attrs: { id: \"trailer-modal-wrapper\" } }, [\n        _c(\"div\", { staticClass: \"movie-meta\" }, [\n          _c(\"h2\", [_vm._v(_vm._s(_vm.selectedMovie.name))]),\n          _vm._v(\" \"),\n          _c(\"tr\"),\n          _vm._v(\" \"),\n          _c(\"h5\", [_vm._v(_vm._s(_vm.selectedMovie.releaseDate))]),\n          _vm._v(\" \"),\n          _c(\"img\", {\n            attrs: {\n              alt: _vm.selectedMovie.name + \" Poster\",\n              src: _vm.getImageWithLocalPath(_vm.selectedMovie.poster)\n            }\n          }),\n          _vm._v(\" \"),\n          _c(\n            \"button\",\n            {\n              staticClass: \"hide-player\",\n              on: {\n                click: function($event) {\n                  return _vm.hidePlayer()\n                }\n              }\n            },\n            [_vm._v(\"\\n\\t\\t\\tReturn to TimeLine\\n\\t\\t\")]\n          )\n        ]),\n        _vm._v(\" \"),\n        _c(\"div\", { staticClass: \"iframe-wrapper\" }, [\n          _c(\"iframe\", {\n            attrs: {\n              src: _vm.getTrailerEmbedUrl(),\n              frameborder: \"0\",\n              allow: \"autoplay; encrypted-media\",\n              allowfullscreen: \"\"\n            }\n          })\n        ])\n      ])\n    : _vm._e()\n}\nvar staticRenderFns = []\nrender._withStripped = true\n\n\n\n//# sourceURL=webpack:///./src/components/TrailerModal.vue?./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib??vue-loader-options");
+
+/***/ })
+
+})
