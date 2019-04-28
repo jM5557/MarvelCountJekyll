@@ -54,6 +54,7 @@
 			setSelectedCharacter: function (character) {
 			
 				this.selectedCharacter = character;
+				window.scrollTo(0,0);
 			
 			},
 

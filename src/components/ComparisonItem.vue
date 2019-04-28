@@ -161,6 +161,16 @@
 			getFileName: getImageWithLocalPath
 		},
 
+		updated () {
+
+			this.$nextTick(function () {
+			    
+			    
+
+			});
+
+		},
+
 		components: {
 			RelatedCharacterList
 		}

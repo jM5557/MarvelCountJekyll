@@ -74,10 +74,9 @@
 
 				}
 
-				this.selectedCharacter = character;
+				window.scrollTo(0, 0);
 
-				createNewBox();
-			
+				this.selectedCharacter = character;			
 			},
 
 			getCharacterImagePath: getImageWithLocalPath
